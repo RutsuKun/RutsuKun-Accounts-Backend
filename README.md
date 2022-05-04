@@ -8,7 +8,8 @@ Supported Grant Types: Authorization Code (also with PKCE)
 
 OAuth2 Configuration: `http://localhost:20000/.well-known/ooauth-authorization-server`<br />
 OpenID Connect Configuration: `http://localhost:20000/.well-known/openid-configuration` <br />
-Documentation: **soon**
+Documentation: **soon**<br />
+Frontend: <https://github.com/RutsuKun/RutsuKun-Accounts-Frontend/>
 
 >RutsuKun Accounts is not OpenID Certified at the moment. 
 
