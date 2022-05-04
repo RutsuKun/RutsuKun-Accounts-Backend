@@ -1,9 +1,0 @@
-<div class="flex flex-row" *ngIf="userData$ | async as adminAccount">
-  <app-admin-sidebar *ngIf="adminAccount.userData"></app-admin-sidebar>
-  <div class="flex flex-column flex-1">
-    <app-header [isAdmin]="true" *ngIf="adminAccount.userData"></app-header>
-    <main class="admin-layout">
-      <router-outlet></router-outlet>
-    </main>
-  </div>
-</div>
