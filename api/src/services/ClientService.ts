@@ -276,6 +276,100 @@ export class ClientService {
     });
   }
 
+  public async updateClient(
+    currentClient: ClientEntity,
+    newClient: ClientEntity
+  ) {
+    const clientTypes = {
+      // web server application
+      wsa: {
+        confidential: true,
+        grantTypes: ["authorization_code", "client_credentials"],
+        responseTypes: ["code", "id_token"],
+        secret: true,
+      },
+      // single page applicaton
+      spa: {
+        confidential: false,
+        grantTypes: ["authorization_code"],
+        responseTypes: ["code", "token", "id_token"],
+        secret: false,
+      },
+      // native application (ex. pwa)
+      native: {
+        confidential: false,
+        grantTypes: ["authorization_code"],
+        responseTypes: ["code", "token", "id_token"],
+        secret: false,
+      },
+      // mobile application (ex. java, kotlin)
+      mobile: {
+        confidential: false,
+        grantTypes: ["authorization_code"],
+        responseTypes: ["code", "token", "id_token"],
+        secret: false,
+      },
+    };
+
+    const { name, description, type, third_party = true, redirect_uris, privacy_policy, tos, website } = newClient;
+
+
+    let clientId;
+    let clientSecret;
+    let grantTypes;
+    let responseTypes;
+
+    if (!name) {
+      throw new Error("CLIENT_NAME_EMPTY");
+    }
+    if (!type) {
+      throw new Error("CLIENT_TYPE_EMPTY");
+    }
+    if (!clientTypes[type]) {
+      throw new Error("CLIENT_TYPE_NOT_SUPPORTED");
+    }
+    if (redirect_uris.length < 1) {
+      throw new Error("CLIENT_REDIRECT_URIS_EMPTY");
+    }
+    if (clientTypes[type].confidential && !currentClient.secret) {
+      clientSecret = await crypto.randomBytes(18).toString("hex");
+    } else if(clientTypes[type].confidential && currentClient.secret) {
+      clientSecret = currentClient.secret;
+    } else {
+      clientSecret = null;
+    }
+    
+    grantTypes = clientTypes[type].grantTypes;
+    responseTypes = clientTypes[type].responseTypes;
+
+        try {
+          const clientToSave = new ClientEntity({
+            ...currentClient,
+            secret: clientSecret,
+            name: name,
+            description: description,
+            grant_types: grantTypes,
+            redirect_uris: redirect_uris,
+            response_types: responseTypes,
+            privacy_policy: privacy_policy,
+            tos: tos,
+            website: website,
+            type: type,
+          });
+  
+          const savedClient = await this.clientRepository.save(clientToSave);
+  
+          return savedClient;
+        } catch(error) {
+          console.log(error);
+          
+        }
+      
+
+
+
+  }
+
   public deleteClient(clientId) {
     const ctx = this;
     return new Promise(async (resolve, reject) => {

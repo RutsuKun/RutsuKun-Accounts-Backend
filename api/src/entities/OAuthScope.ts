@@ -9,6 +9,7 @@ import {
   } from "typeorm";
 import { CrossAclAccountScopeEntity } from "./CrossAclAccountScope";
 import { CrossAclGroupScopeEntity } from "./CrossAclGroupScope";
+import { OAuthAuthorization } from "./OAuthAuthorization";
 import { OAuthClientACL } from "./OAuthClientACL";
   
 @Entity({
@@ -44,5 +45,8 @@ export class OAuthScope {
 
   @OneToMany(() => CrossAclGroupScopeEntity, (groupScope) => groupScope.group)
   scopesGroups?: CrossAclAccountScopeEntity[];
+
+  @ManyToMany(() => OAuthAuthorization, (authz) => authz.scopes, { onUpdate: "CASCADE", onDelete: "CASCADE" })
+  authorizations?: CrossAclAccountScopeEntity[];
 }
   

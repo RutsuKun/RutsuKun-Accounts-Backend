@@ -82,7 +82,7 @@ export class SessionService {
 
     this.session = req.session;
     const currentSessionUuid = req.session.currentSessionUuid;
-    const clientQuery = req.session.clientFromQuery;
+    const clientQuery = req.session.clientFromQuery ?? {};
     const client = req.session.client;
     const idp = req.session.idp;
     const sso = req.session.sso;
@@ -90,16 +90,22 @@ export class SessionService {
     const error = req.session.error;
 
     const flow = req.body.flow || req.session.flow || "auth";
+    const prompt = req.body.prompt ? req.body.prompt : null;
+    console.log("body", req.body);
+    
+    console.log('prompt', prompt);
+    
 
     const browserSessions = await this.accountsService.getBrowserSessionsEndpoint(session_id);
     this.setBrowserSessions(browserSessions);
 
     if (currentSessionUuid) this.setCurrentSessionUuid(currentSessionUuid);
-    if (clientQuery) this.setClientQuery(clientQuery);
+    this.setClientQuery(clientQuery);
     if (client) this.setClient(client);
     if (idp) this.setIDP(idp);
     if (sso) this.setSSO(sso);
     if (action) this.setAction(action);
+    if (clientQuery) this.setPrompt(prompt);
     this.setFlow(flow);
     if (error) this.setError(error);
 
@@ -362,6 +368,25 @@ export class SessionService {
     return this;
   }
 
+  // PROMPT
+
+  get getPrompt(): ClientPromptType {
+    return this.clientQuery.prompt;
+  }
+
+  setPrompt(prompt: ClientPromptType) {    
+    console.log("this.clientQuery ", this.clientQuery);
+    
+    this.clientQuery.prompt = prompt;
+    return this;
+  }
+
+  delPrompt() {
+    this.loggerService.info("function delPrompt");
+    this.clientQuery.prompt = null;
+    return this;
+  }
+
   // OAUTH //
 
   get getOAuth() {
@@ -449,10 +474,12 @@ export interface SessionClientQuery {
   scope: string;
   state: string;
   nonce: string;
-  prompt: "login" | "signup" | "consent" | "none";
+  prompt: ClientPromptType;
   code_challenge: string;
   code_challenge_method: string;
 }
+
+export type ClientPromptType = "login" | "signup" | "consent" | "select_account" | "none" | null;
 
 export interface SessionClient {
   registrationEnabled: boolean;

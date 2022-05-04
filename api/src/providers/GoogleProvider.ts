@@ -6,7 +6,7 @@ import { Config } from "@config";
 const userInfoUrl = "https://openidconnect.googleapis.com/v1/userinfo";
 const googleScopeEmail = "email";
 
-export class GoogleProvider implements IProvider<"Google"> {
+export class GoogleProvider implements IProvider {
   type: string = null;
   id: string = null;
   name: string = null;

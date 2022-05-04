@@ -1,4 +1,4 @@
-export interface IProvider<T> {
+export interface IProvider {
   type: string;
   id: string;
   name: string;

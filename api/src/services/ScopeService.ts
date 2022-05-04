@@ -11,7 +11,6 @@ export class ScopeService {
   private oauthScopeRepository: OAuthScopeRepository;
   constructor() {}
 
-
   public getScopes() {
     return this.oauthScopeRepository.findAll();
   }
@@ -26,5 +25,15 @@ export class ScopeService {
 
   public deleteScope(scope: string): Promise<DeleteResult> {
     return this.oauthScopeRepository.delete({ name: scope });
+  }
+
+  async getScopesEntities(scopes: string[]) {
+
+
+    const foundScopes = await this.oauthScopeRepository.find({ 
+      where: scopes.map((scope) => ({ name: scope }) )
+    });
+
+    return foundScopes;
   }
 }

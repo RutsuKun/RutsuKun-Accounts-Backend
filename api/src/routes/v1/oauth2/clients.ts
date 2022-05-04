@@ -1,4 +1,4 @@
-import { Context, Controller, Delete, Get, Inject, PathParams, Post, Req, Res, UseBefore } from "@tsed/common";
+import { Context, Controller, Delete, Get, Inject, PathParams, Post, Put, Req, Res, UseBefore } from "@tsed/common";
 
 // MIDDLEWARES
 
@@ -13,6 +13,7 @@ import { ClientService } from "@services/ClientService";
 import { HTTPCodes } from "@utils";
 
 import { map, timer } from 'rxjs';
+import { ClientEntity } from "@entities/Client";
 
 @Controller("/oauth2/clients")
 export class OAuth2ClientsRoute {
@@ -88,11 +89,9 @@ export class OAuth2ClientsRoute {
   public deleteClients(
     @Req() request: Req,
     @Res() response: Res,
-    @Context("session") session: SessionService
+    @Context("session") session: SessionService,
+    @PathParams("clientId") clientId: string,
   ) {
-
-
-    const clientId = request.params.clientId;
 
     this.clientService
       .getClientByClientId(clientId)
@@ -119,6 +118,45 @@ export class OAuth2ClientsRoute {
           error: error,
         });
       });
+  }
+
+  @Put("/:clientId")
+  @UseBefore(SessionLoggedMiddleware)
+  @UseBefore(SessionMiddleware)
+  public async updateClients(
+    @Req() request: Req,
+    @Res() response: Res,
+    @Context("session") session: SessionService,
+    @PathParams("clientId") clientId: string,
+  ) {
+
+    let client: ClientEntity;
+
+    try {
+      client = await this.clientService.getClientByClientId(clientId);
+    } catch(error) {
+      return response.status(HTTPCodes.BadRequest).json({
+        error: error,
+      });
+    }
+    
+    if (session.getCurrentSessionAccount.uuid === client.account.uuid) {
+
+      try {
+        const newClient = await this.clientService.updateClient(client, request.body);
+        return response.status(HTTPCodes.OK).json(newClient);
+      } catch(error) {
+        return response.status(HTTPCodes.BadRequest).json({
+          error: error,
+        });
+      }
+
+    } else {
+      return response.status(HTTPCodes.BadRequest).json({
+        error: "Can you only delete your own application",
+      });
+    }
+
   }
 
   @Get("/:clientId/public")

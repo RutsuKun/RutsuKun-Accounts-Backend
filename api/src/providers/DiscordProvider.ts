@@ -6,7 +6,7 @@ import { Config } from "@config";
 const userInfoUrl = "https://discord.com/api/users/@me";
 const googleScopeEmail = "email";
 
-export class DiscordProvider implements IProvider<"Google"> {
+export class DiscordProvider implements IProvider {
   type: string = null;
   id: string = null;
   name: string = null;

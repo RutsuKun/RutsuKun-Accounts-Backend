@@ -32,7 +32,7 @@ const apiDir = __dirname;
     "/": [IndexRoute, V1IndexRoute, WellKnownRoute],
     "/v1": path.join(apiDir, "routes", "v1", "**", "*.ts"),
   },
-  debug: false,
+  debug: true,
   middlewares: [
     express.json(),
     express.urlencoded({ extended: true }),
@@ -47,7 +47,7 @@ const apiDir = __dirname;
       username: Config.Database.user,
       password: Config.Database.pass,
       database: Config.Database.database,
-      logging: !Config.isLocal,
+      logging: Config.isLocal,
       synchronize: Config.isLocal || Config.isDevelop,
       driver: require("mysql2"),
       entities: [`${apiDir}/entities/*{.ts,.js}`],
@@ -61,16 +61,7 @@ export class APIServer {
   app: PlatformApplication;
   @Configuration() settings: Configuration;
 
-  private logger: LoggerService;
-
-  constructor(private loggerService: LoggerService) {
-    this.logger = this.loggerService.child({
-      label: {
-        type: "http",
-        name: `API Server (${Config.API.port})`,
-      },
-    });
-  }
+  constructor() {}
 
   public $beforeRoutesInit(): void | Promise<any> {
     this.app.use(cors({ origin: Config.FRONTEND.url, credentials: true }));

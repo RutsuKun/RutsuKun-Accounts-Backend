@@ -6,7 +6,7 @@ import { Config } from "@config";
 const userInfoUrl = "https://api.twitter.com/2/users/me?user.fields=profile_image_url,username";
 const googleScopeEmail = "email";
 
-export class DiscordProvider implements IProvider<"Google"> {
+export class DiscordProvider implements IProvider {
   type: string = null;
   id: string = null;
   name: string = null;

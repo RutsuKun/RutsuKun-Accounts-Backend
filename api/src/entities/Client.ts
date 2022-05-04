@@ -4,10 +4,12 @@ import {
   Generated,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryColumn,
 } from "typeorm";
 import { AccountEntity } from "./Account";
+import { OAuthAuthorization } from "./OAuthAuthorization";
 import { OAuthClientACL } from "./OAuthClientACL";
 import { OAuthClientOrganization } from "./OAuthClientOrganization";
 import { OAuthScope } from "./OAuthScope";
@@ -22,6 +24,7 @@ export class ClientEntity {
   }
 
   @Generated("uuid")
+  @Column()
   uuid?: string;
 
   @Column({ type: "varchar", default: "ACTIVE" })
@@ -82,6 +85,9 @@ export class ClientEntity {
 
   @OneToOne(() => OAuthClientOrganization, (org) => org.client, { cascade: true  })
   organization?: OAuthClientOrganization;
+
+  @OneToMany(() => OAuthAuthorization, (authz) => authz.client, { cascade: true })
+  authorizations?: OAuthAuthorization[];
 
   addAcl?(scopes: OAuthScope[]) {
     this.acl = {

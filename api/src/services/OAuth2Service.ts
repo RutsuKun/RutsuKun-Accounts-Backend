@@ -23,11 +23,15 @@ import { OAuthDeviceCode } from "@entities/OAuthDeviceCode";
 import { Config } from "@config";
 import crypto from "crypto";
 import { AccountsService } from "./AccountsService";
-import { OAuthClientACL } from "@entities/OAuthClientACL";
 import { AccountEntity } from "@entities/Account";
 import { IAcl } from "common/interfaces/acl.interface";
+import { AclService } from "./AclService";
 
-import _ from 'lodash';
+import _ from "lodash";
+import { OAuthAuthorizationRepository } from "@repositories/OAuthAuthorizationRepository";
+import { ClientEntity } from "@entities/Client";
+import { OAuthScope } from "@entities/OAuthScope";
+import { ScopeService } from "./ScopeService";
 
 @Injectable()
 export class OAuth2Service {
@@ -43,12 +47,18 @@ export class OAuth2Service {
   @UseConnection("default")
   private oauthDeviceCode: OAuthDeviceCodeRepository;
 
+  @Inject()
+  @UseConnection("default")
+  private oauthAuthorizationRepository: OAuthAuthorizationRepository;
+
   constructor(
     private loggerService: LoggerService,
     private sessionService: SessionService,
     private tokenService: TokenService,
     private clientService: ClientService,
-    private accountsService: AccountsService
+    private accountsService: AccountsService,
+    private aclService: AclService,
+    private scopeService: ScopeService
   ) {
     this.logger = this.loggerService.child({
       label: {
@@ -58,24 +68,30 @@ export class OAuth2Service {
     });
   }
 
-  public healthy() {
-    const ctx = this;
-    ctx.logger.info(`Requested ${this.name} Component Healthy Check`);
-    const healthy = {
-      name: this.name,
-      slug: "oauth2",
-      healthy: ctx.running,
-    };
-    return healthy;
-  }
-
-  public async checkConsent(req: Request, res: Response, session: SessionService) {
+  public async checkConsent(
+    req: Request,
+    res: Response,
+    session: SessionService
+  ) {
     const clientFromSession = session.getClient;
     const clientFromQuery = session.getClientQuery;
     const { ip, country, city, eu } = req.ipInfo;
 
+    const client = await this.clientService.getClientByClientId(
+      clientFromSession.client_id
+    );
+    const account = await this.accountsService.getAccountByUUID(
+      session.getCurrentSessionAccount.uuid
+    );
+
+    const { needConsent } = await this.needAuthorizationConsent(
+      client,
+      account,
+      clientFromQuery.scope.split(" ")
+    );
+
     if (clientFromSession) {
-      if (clientFromSession.consent) {
+      if (clientFromSession.consent || needConsent) {
         const consent = {
           scope: clientFromQuery.scope,
           client: {
@@ -104,10 +120,27 @@ export class OAuth2Service {
           "Authorization in progress for " + userUsername + " (" + userId + ")"
         );
 
+        let scopeToAuthorize = session.getClientQuery.scope.split(" ");
+
+        const account = await this.accountsService.getByUUIDWithRelations(
+          session.getCurrentSessionAccount.uuid,
+          ["groups"]
+        );
+
+        const acl = await this.aclService.getAcl(
+          session.getClientQuery.client_id
+        );
+
+        scopeToAuthorize = this.filterAllowedScopes(
+          account,
+          acl,
+          scopeToAuthorize
+        );
+
         const data = await this.authorize({
           response_type: clientFromQuery.response_type,
           redirect_uri: clientFromQuery.redirect_uri,
-          scopes: clientFromQuery.scope ? clientFromQuery.scope.split(" ") : [],
+          scopes: scopeToAuthorize,
           accountId: userId,
           country,
           code_challenge: clientFromQuery.code_challenge,
@@ -130,7 +163,7 @@ export class OAuth2Service {
               "Response Parameter URI: " + data.response.parameters.uri
             );
             return data;
-          break;
+            break;
           case "error":
             return {
               type: "error",
@@ -183,6 +216,20 @@ export class OAuth2Service {
           accountId,
           ["emails"]
         );
+
+        const _client = await this.clientService.getClientByClientId(
+          client.client_id
+        );
+
+        const hasAuthorization = await this.hasAuthorization(_client, account);
+
+        if (!hasAuthorization) {
+          const foundScopes = await this.scopeService.getScopesEntities(scopes);
+          console.log("foundScopes entities ", foundScopes);
+
+          await this.createAuthorization(_client, account, foundScopes);
+        }
+
         // const scopes = await ctx.settings.getScopesByRole(account.role);
         let IDTokenData: ICreateIDTokenData = {
           sub: account.uuid,
@@ -258,7 +305,10 @@ export class OAuth2Service {
           IDTokenData.s_hash = ctx.tokenService.createSHash(state, "RS256");
         }
 
-        if(scopes.includes("offline_access") && !response_types_check.includes("code")) {
+        if (
+          scopes.includes("offline_access") &&
+          !response_types_check.includes("code")
+        ) {
           const RefreshTokenData: CreateRefreshTokenData = {
             sub: account.uuid,
             client_id: client.client_id,
@@ -269,7 +319,9 @@ export class OAuth2Service {
           const rv2 = Math.random().toString(36).substr(2, 12);
           const rv3 = Math.floor(Math.random() * Math.floor(81458));
           RefreshTokenData.jti = rv1 + "-" + rv2 + "-" + rv3;
-          const refresh_token = await ctx.tokenService.createRefreshToken(RefreshTokenData);
+          const refresh_token = await ctx.tokenService.createRefreshToken(
+            RefreshTokenData
+          );
           res.refresh_token = refresh_token;
           res.refresh_token_type = "Bearer";
         }
@@ -278,8 +330,7 @@ export class OAuth2Service {
 
         const params = new URLSearchParams(res);
 
-        console.log('params', params);
-        
+        console.log("params", params);
 
         if (response_types_check.includes("id_token")) {
           resolve({
@@ -325,7 +376,11 @@ export class OAuth2Service {
     });
   }
 
-  public filterAllowedScopes(account: AccountEntity, acl: IAcl, scopes: string[]) {
+  public filterAllowedScopes(
+    account: AccountEntity,
+    acl: IAcl,
+    scopes: string[]
+  ) {
     if (!acl || !acl.allowedScopes.length) return [];
 
     let aclAllowedScopes: string[] = [];
@@ -334,36 +389,56 @@ export class OAuth2Service {
 
     const aclScopes = acl.allowedScopes;
 
-    const aclUnallowedScopes = !!aclScopes.length ? scopes.filter(filteredScope => !aclScopes.includes(filteredScope)) : [];
+    const aclUnallowedScopes = !!aclScopes.length
+      ? scopes.filter((filteredScope) => !aclScopes.includes(filteredScope))
+      : [];
 
-    console.log("aclUnallowedScopes", aclUnallowedScopes.length ? aclUnallowedScopes.join(", ") : "none");
+    console.log(
+      "aclUnallowedScopes",
+      aclUnallowedScopes.length ? aclUnallowedScopes.join(", ") : "none"
+    );
 
-    aclAllowedScopes = !!acl.allowedScopes.length ? scopes.filter(filteredScope => acl.allowedScopes.includes(filteredScope)) : [];
+    aclAllowedScopes = !!acl.allowedScopes.length
+      ? scopes.filter((filteredScope) =>
+          acl.allowedScopes.includes(filteredScope)
+        )
+      : [];
 
-    const accountHasAccess = acl.allowedAccounts.find((a) => a.uuid === account.uuid);
+    const accountHasAccess = acl.allowedAccounts.find(
+      (a) => a.uuid === account.uuid
+    );
     if (acl.allowedAccounts.length && accountHasAccess) {
-      
-      const accountUnallowedScopes = scopes.filter(filteredScope => !accountHasAccess.allowedScopes.includes(filteredScope));
+      const accountUnallowedScopes = scopes.filter(
+        (filteredScope) =>
+          !accountHasAccess.allowedScopes.includes(filteredScope)
+      );
 
       console.log(
         "accountUnallowedScopes",
-        accountUnallowedScopes.length ? accountUnallowedScopes.join(", ") : 'none'
+        accountUnallowedScopes.length
+          ? accountUnallowedScopes.join(", ")
+          : "none"
       );
 
-      accountAllowedScopes = scopes.filter((filteredScope) => accountHasAccess.allowedScopes.includes(filteredScope));
+      accountAllowedScopes = scopes.filter((filteredScope) =>
+        accountHasAccess.allowedScopes.includes(filteredScope)
+      );
 
-      console.log("accountAllowedScopes", accountAllowedScopes.length ? accountAllowedScopes.join(", ") : "none");
+      console.log(
+        "accountAllowedScopes",
+        accountAllowedScopes.length ? accountAllowedScopes.join(", ") : "none"
+      );
     }
 
-    const groupsHasAccess = acl.allowedGroups.filter((a) => account.groups.find((accountGroup) => accountGroup.name === a.name));
+    const groupsHasAccess = acl.allowedGroups.filter((a) =>
+      account.groups.find((accountGroup) => accountGroup.name === a.name)
+    );
     if (acl.allowedGroups.length && groupsHasAccess.length) {
-      
       let arrayOfScopes = groupsHasAccess.map((group) => group.allowedScopes);
 
       console.log("arrayOfScopes", arrayOfScopes);
-      
-      if (arrayOfScopes.length) {
 
+      if (arrayOfScopes.length) {
         const hasAnyScopes = arrayOfScopes.filter((a) => a.length);
 
         console.log("hasAnyScopes", hasAnyScopes);
@@ -371,31 +446,35 @@ export class OAuth2Service {
         if (!hasAnyScopes.length) {
           groupsAllowedScopes = scopes;
         } else {
-          let tempGroupsAllowedScopes = arrayOfScopes.join().split(',');
+          let tempGroupsAllowedScopes = arrayOfScopes.join().split(",");
           groupsAllowedScopes = _.union(tempGroupsAllowedScopes);
-          groupsAllowedScopes = scopes.filter(filteredScope => groupsAllowedScopes.includes(filteredScope));
+          groupsAllowedScopes = scopes.filter((filteredScope) =>
+            groupsAllowedScopes.includes(filteredScope)
+          );
         }
-
       }
 
-      console.log("groupsAllowedScopes", groupsAllowedScopes.length ? groupsAllowedScopes.join(", ") : "none");
-      
+      console.log(
+        "groupsAllowedScopes",
+        groupsAllowedScopes.length ? groupsAllowedScopes.join(", ") : "none"
+      );
     }
-    
 
     let finalAllowedScopes;
     if (!acl.allowedAccounts.length && !acl.allowedGroups.length) {
       finalAllowedScopes = aclAllowedScopes;
     } else {
-      finalAllowedScopes = [
-        ...accountAllowedScopes,
-        ...groupsAllowedScopes
-      ];
+      finalAllowedScopes = [...accountAllowedScopes, ...groupsAllowedScopes];
 
-      finalAllowedScopes = finalAllowedScopes.filter(filteredScope => aclAllowedScopes.includes(filteredScope));
+      finalAllowedScopes = finalAllowedScopes.filter((filteredScope) =>
+        aclAllowedScopes.includes(filteredScope)
+      );
     }
 
-    console.log("finalAllowedScopes", finalAllowedScopes.length ? finalAllowedScopes.join(", ") : "none");
+    console.log(
+      "finalAllowedScopes",
+      finalAllowedScopes.length ? finalAllowedScopes.join(", ") : "none"
+    );
 
     return finalAllowedScopes;
   }
@@ -487,7 +566,7 @@ export class OAuth2Service {
             const access_token = await ctx.tokenService.createAccessToken({
               sub: account.uuid,
               client_id: data.client.client_id,
-              scopes: scopes
+              scopes: scopes,
             });
 
             ctx.logger.success("Access Token generated: " + access_token);
@@ -587,7 +666,7 @@ export class OAuth2Service {
           const access_token = await ctx.tokenService.createAccessToken({
             sub: data.client.client_id,
             client_id: data.client.client_id,
-            scopes: data.scope.split(" ")
+            scopes: data.scope.split(" "),
           });
 
           ctx.logger.success("Access Token generated: " + access_token);
@@ -624,7 +703,7 @@ export class OAuth2Service {
             const access_token = await ctx.tokenService.createAccessToken({
               sub: account.uuid,
               client_id: data.client.client_id,
-              scopes: scopes
+              scopes: scopes,
             });
 
             ctx.logger.success("Access Token generated: " + access_token);
@@ -648,7 +727,6 @@ export class OAuth2Service {
               );
 
               const s_hash = ctx.tokenService.createSHash("12345", "RS256");
-
 
               const IDTokenData = {
                 sub: account.uuid,
@@ -742,6 +820,58 @@ export class OAuth2Service {
       user_code,
     });
     return findDeviceToken;
+  }
+
+  async getAuthorizations() {
+    return this.oauthAuthorizationRepository.findAll();
+  }
+
+  async hasAuthorization(client: ClientEntity, account: AccountEntity) {
+    return this.oauthAuthorizationRepository.findOne({
+      where: {
+        account: {
+          uuid: account.uuid,
+        },
+        client: {
+          client_id: client.client_id,
+        },
+      },
+      relations: ["account", "client", "scopes"],
+    });
+  }
+
+  createAuthorization(
+    client: ClientEntity,
+    account: AccountEntity,
+    scopes: OAuthScope[]
+  ) {
+    return this.oauthAuthorizationRepository.save({
+      account,
+      client,
+      scopes,
+    });
+  }
+
+  async needAuthorizationConsent(
+    client: ClientEntity,
+    account: AccountEntity,
+    scopes: string[]
+  ) {
+    const foundAuthorization = await this.hasAuthorization(client, account);
+
+    console.log("foundAuthorization", !!foundAuthorization);
+
+    if (foundAuthorization) {
+      const proccessNewScopes = scopes.filter(
+        (scope) => !foundAuthorization.scopes.find((s) => s.name === scope)
+      );
+
+      console.log("proccessNewScopes", proccessNewScopes);
+
+      return { needConsent: !!proccessNewScopes.length };
+    }
+
+    return { needConsent: true };
   }
 }
 

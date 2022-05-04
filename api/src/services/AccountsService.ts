@@ -407,6 +407,8 @@ export class AccountsService {
       account: {
         uuid,
       },
+    }, {
+      relations: ["account"]
     });
   }
 

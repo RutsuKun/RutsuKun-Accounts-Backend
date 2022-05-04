@@ -56,6 +56,7 @@ export class OAuth2Route {
   ) {
     session.setFlow("oauth");
     const authUrl = Config.FRONTEND.url + "/signin";
+    const chooseAccountUrl = Config.FRONTEND.url + "/choose-account";
     let { client_id, redirect_uri, response_type, scope, nonce, state, code_challenge, code_challenge_method, prompt, login_hint, password_hint, display, service } = request.query;
     const acr_values = request.query.acr_values || "urn:rutskun:bronze";
 
@@ -242,7 +243,9 @@ export class OAuth2Route {
         }
       }
 
-
+      if(session.getClientQuery.prompt === "select_account") {
+        return response.redirect(chooseAccountUrl + "?" + paramsInUri);
+      }
 
       return response.redirect(authUrl + "?" + paramsInUri);
     } catch (err) {
@@ -297,11 +300,8 @@ export class OAuth2Route {
 
     const acl = await this.aclService.getAcl(session.getClientQuery.client_id);
 
-    console.log('acl------------------------>', acl);
     
     scopeToAuthorize = this.oauthService.filterAllowedScopes(account, acl, scopeToAuthorize);
-
-    console.log("scopeToAuthorize---------------->", scopeToAuthorize);
     
 
     scopeToAuthorize = scopeToAuthorize;

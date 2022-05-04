@@ -58,7 +58,7 @@ services:
         profiles: ['production']
         volumes: 
           - ./nginx/config-prod.conf:/etc/nginx/conf.d/default.conf:rw
-          - ./front/dist:/home/front
+          - ./front:/home/auth-server-front
           - ./nginx/prod/ssl:/etc/nginx/ssl
         command: [nginx-debug, '-g', 'daemon off;']
         restart: unless-stopped

@@ -7,7 +7,7 @@ import DiscordProvider from "@providers/DiscordProvider";
 import GoogleProvider from "@providers/GoogleProvider";
 import TwitterProvider from "@providers/TwitterProvider";
 
-export const initializeProviders = (): IProvider<any>[] => {
+export const initializeProviders = (): IProvider[] => {
   return Config.AUTH.providers.map((p) => {
     assert(p.id, `id is not specified for provider '${p.type}'.`);
     assert(p.name, `name is not specified for provider '${p.type}'.`);
