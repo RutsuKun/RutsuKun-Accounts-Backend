@@ -32,6 +32,7 @@ import { OAuthAuthorizationRepository } from "@repositories/OAuthAuthorizationRe
 import { ClientEntity } from "@entities/Client";
 import { OAuthScope } from "@entities/OAuthScope";
 import { ScopeService } from "./ScopeService";
+import { OAuthAuthorization } from "@entities/OAuthAuthorization";
 
 @Injectable()
 export class OAuth2Service {
@@ -824,6 +825,30 @@ export class OAuth2Service {
 
   async getAuthorizations() {
     return this.oauthAuthorizationRepository.findAll();
+  }
+
+  async getAuthorizationByUUID(uuid: string) {
+    return this.oauthAuthorizationRepository.findOne({
+      where: {
+        uuid
+      },
+      relations: ["account"]
+    })
+  }
+
+  async getAuthorizationsByAccountUUID(uuid: string) {
+    return this.oauthAuthorizationRepository.find({
+      where: {
+        account: {
+          uuid
+        }
+      },
+      relations: ["account", "client", "scopes"]
+    })
+  }
+
+  async deleteAuthorization(authz: OAuthAuthorization) {
+    return this.oauthAuthorizationRepository.delete(authz);
   }
 
   async hasAuthorization(client: ClientEntity, account: AccountEntity) {

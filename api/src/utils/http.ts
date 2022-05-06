@@ -4,6 +4,20 @@ import e, { Request, Response } from "express";
 import { LoggerService } from "@services/LoggerService";
 
 class HTTP {
+  public static NotImplemented(
+    req: Req,
+    res: Response,
+  ) {
+    try {
+      return res.status(HTTPCodes.NotImplemented).json({
+        status: "error",
+        error: `Method ${req.method} on route ${req.baseUrl} not implemented yet`,
+      });
+    } catch (_) {
+      // shall do nothing
+    }
+  }
+
   public static ResourceNotFound(
     id: Number | String,
     req: Request,
@@ -75,6 +89,21 @@ class HTTP {
       return res.status(HTTPCodes.Unauthorized).json({
         status: "error",
         error: "Account is unauthorized",
+      });
+    } catch (_) {
+      // shall do nothing
+    }
+  }
+
+  public static Forbidden(
+    id: number | string,
+    req: Request,
+    res: Response,
+  ) {
+    try {
+      return res.status(HTTPCodes.Forbidden).json({
+        status: "error",
+        error: `You cannot access the resource ${id}`
       });
     } catch (_) {
       // shall do nothing
