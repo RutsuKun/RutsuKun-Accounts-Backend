@@ -465,9 +465,9 @@ export class AccountsService {
     this.accountsProviderRepository.save(provider);
   }
 
-  public removeProvider(provider: AccountProvider) {
+  public async removeProvider(provider: AccountProvider) {
     try {
-      this.accountsProviderRepository.remove(provider);
+      await this.accountsProviderRepository.remove(provider);
     } catch (err) {
       console.log("err", err);
     }

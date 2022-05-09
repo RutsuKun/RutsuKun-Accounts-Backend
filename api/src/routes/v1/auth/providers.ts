@@ -1,5 +1,5 @@
 import { Controller } from "@tsed/di";
-import { Get, Post } from "@tsed/schema";
+import { Delete, Get, Post } from "@tsed/schema";
 import { AccountsService } from "@services/AccountsService";
 import { AuthService } from "@services/AuthService";
 import { SessionService } from "@services/SessionService";
@@ -366,6 +366,7 @@ export class AuthProvidersRoute {
     @Context("session") session: SessionService
   ) {
     const providerId = request.params.providerId || "unknown";
+    const flow = request.query.flow || "auth";
     const redirectTo = (request.query.redirectTo as string) || null;
 
     const provider = this.authService
@@ -396,6 +397,7 @@ export class AuthProvidersRoute {
           redirectTo: redirectTo,
         },
       });
+      session.setFlow(flow);
       await session.saveSession();
     }
 
@@ -688,7 +690,7 @@ export class AuthProvidersRoute {
     }
   }
 
-  @Get("/:providerId/disconnect")
+  @Delete("/:providerId")
   @UseBefore(SessionMiddleware)
   public async getProviderDisconnect(
     @Req() request: Req,
@@ -702,12 +704,10 @@ export class AuthProvidersRoute {
       .find((p) => p.id === providerId);
 
     if (!provider) {
-      return response.redirect(
-        `${Config.FRONTEND.url}/signin?${new URLSearchParams({
-          error: "invalid_request",
-          error_description: `Requested provider '${providerId}' does not exist`,
-        })}`
-      );
+      return response.status(400).json({
+        error: "invalid_request",
+        error_description: `Requested provider '${providerId}' does not exist`,
+      });
     }
 
     try {
@@ -720,11 +720,20 @@ export class AuthProvidersRoute {
       );
       if (account && findProvider) {
         await this.accountsService.removeProvider(findProvider);
+      } else {
+        return response.status(400).json({
+          error: "invalid_request",
+          error_description: "Provider not exist",
+        });
       }
 
-      return response.redirect(`${Config.FRONTEND.url}/account/general`);
+      return response.status(200).json({ success: true });
     } catch (err) {
       console.log("err", err);
+      return response.status(400).json({
+        error: "invalid_request",
+        error_description: err,
+      });
     }
   }
 }
