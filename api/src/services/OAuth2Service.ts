@@ -81,20 +81,22 @@ export class OAuth2Service {
     const client = await this.clientService.getClientByClientId(
       clientFromSession.client_id
     );
-    const account = await this.accountsService.getAccountByUUID(
-      session.getCurrentSessionAccount.uuid
-    );
+    const account = await this.accountsService.getByUUIDWithRelations(session.getCurrentSessionAccount.uuid, ["groups"]);
+
+    const acl = await this.aclService.getAcl(session.getClientQuery.client_id);
+
+    const scopeToAuthorize = this.filterAllowedScopes(account, acl, clientFromQuery.scope.split(" "));
 
     const { needConsent } = await this.needAuthorizationConsent(
       client,
       account,
-      clientFromQuery.scope.split(" ")
+      scopeToAuthorize
     );
 
     if (clientFromSession) {
       if (clientFromSession.consent || needConsent) {
         const consent = {
-          scope: clientFromQuery.scope,
+          scope: scopeToAuthorize.join(" "),
           client: {
             client_id: clientFromSession.client_id,
             client_name: clientFromSession.name,
@@ -225,7 +227,7 @@ export class OAuth2Service {
         const hasAuthorization = await this.hasAuthorization(_client, account);
 
         if (!hasAuthorization) {
-          const foundScopes = await this.scopeService.getScopesEntities(scopes);
+          const foundScopes = scopes.length ? (await this.scopeService.getScopesEntities(scopes)) : [];
           console.log("foundScopes entities ", foundScopes);
 
           await this.createAuthorization(_client, account, foundScopes);
@@ -381,7 +383,7 @@ export class OAuth2Service {
     account: AccountEntity,
     acl: IAcl,
     scopes: string[]
-  ) {
+  ): string[] {
     if (!acl || !acl.allowedScopes.length) return [];
 
     let aclAllowedScopes: string[] = [];

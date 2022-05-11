@@ -304,8 +304,6 @@ export class OAuth2Route {
     scopeToAuthorize = this.oauthService.filterAllowedScopes(account, acl, scopeToAuthorize);
     
 
-    scopeToAuthorize = scopeToAuthorize;
-
     try {
       const data = await this.oauthService.authorize({
         response_type: session.getClientQuery.response_type,

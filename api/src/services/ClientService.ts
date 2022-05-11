@@ -64,6 +64,13 @@ export class ClientService {
     });
   }
 
+  getAdminClient(client_id: string, relations: string[]) {
+    return this.clientRepository.findOne({
+      where: { client_id },
+      relations: relations
+    });
+  }
+
   public addClient(
     accountUUID: string,
     client: ClientEntity

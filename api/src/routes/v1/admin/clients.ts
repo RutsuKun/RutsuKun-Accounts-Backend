@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Inject, Post, Req, Res, UseBefore } from "@tsed/common";
+import { Controller, Delete, Get, Inject, PathParams, Post, QueryParams, Req, Res, UseBefore } from "@tsed/common";
 
 // MIDDLEWARES
 
@@ -63,6 +63,28 @@ export class AdminClientsRoute {
         error: err,
       });
     }
+  }
+
+  @Get("/:clientId")
+  @UseBefore(AccessTokenMiddleware)
+  @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:clients:manage"]))
+  public async getAdminClient(
+    @Req() request: Req,
+    @Res() response: Res,
+    @PathParams("clientId") client_id: string
+  ) {
+    const client = await this.clientService.getAdminClient(client_id, ["account", "organization"]);
+    console.log('client ', client);
+    
+
+    response.status(HTTPCodes.OK).json({
+      ...client,
+      account: {
+          uuid: client.account.uuid,
+          username: client.account.username,
+          avatar: client.account.avatar
+      }
+    });
   }
 
   @Delete("/:clientId")
