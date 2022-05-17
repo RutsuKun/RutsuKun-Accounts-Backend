@@ -9,11 +9,11 @@ import {
 import { ClientEntity } from "./Client";
 
 @Entity({
-  name: "oauth_clients_organizations",
+  name: "organizations",
   engine: "InnoDB",
 })
-export class OAuthClientOrganization {
-  constructor(org?: OAuthClientOrganization) {
+export class Organization {
+  constructor(org?: Organization) {
     if(org) {
       Object.assign(this, org);
     }
@@ -30,6 +30,12 @@ export class OAuthClientOrganization {
   })
   client?: ClientEntity;
 
+  @Column({
+    type: "varchar",
+    nullable: false,
+    default: "/assets/images/avatars/default-avatar.png"
+  })
+  logo: string;
 
   @Column({
     type: "varchar",

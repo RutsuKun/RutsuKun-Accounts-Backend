@@ -11,7 +11,7 @@ import {
 import { AccountEntity } from "./Account";
 import { OAuthAuthorization } from "./OAuthAuthorization";
 import { OAuthClientACL } from "./OAuthClientACL";
-import { OAuthClientOrganization } from "./OAuthClientOrganization";
+import { Organization } from "./Organization";
 import { OAuthScope } from "./OAuthScope";
 
 @Entity({
@@ -83,8 +83,8 @@ export class ClientEntity {
   @OneToOne(() => OAuthClientACL, (acl) => acl.client, { cascade: true  })
   acl?: OAuthClientACL;
 
-  @OneToOne(() => OAuthClientOrganization, (org) => org.client, { cascade: true  })
-  organization?: OAuthClientOrganization;
+  @OneToOne(() => Organization, (org) => org.client, { cascade: true  })
+  organization?: Organization;
 
   @OneToMany(() => OAuthAuthorization, (authz) => authz.client, { cascade: true })
   authorizations?: OAuthAuthorization[];

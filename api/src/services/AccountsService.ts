@@ -222,7 +222,7 @@ export class AccountsService {
     const ctx = this;
     return new Promise(async (resolve, reject) => {
       const list = await this.accountRepository.find({
-        relations: ["emails"],
+        relations: ["emails", "groups"],
       });
 
       const accounts = [];
@@ -238,6 +238,7 @@ export class AccountsService {
           clients: item.clients,
           providers: item.providers,
           emails: item.emails,
+          groups: item.groups
         });
       });
       resolve(accounts);
