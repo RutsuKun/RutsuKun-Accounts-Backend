@@ -18,4 +18,8 @@ export class OrganizationService {
     return this.organizationRepository.findAll();
   }
 
+  public getOrganizationByUUID(uuid: string) {
+    return this.organizationRepository.findOne({ uuid });
+  }
+
 }

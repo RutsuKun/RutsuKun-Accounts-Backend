@@ -315,6 +315,13 @@ export class AccountsService {
     });
   }
 
+  public getAccountGroupsByUUID(uuid: string) {
+    return this.accountRepository.findOne({
+      where: { uuid },
+      relations: ["groups"],
+    });
+  }
+
   public getAccountPermissionsByUUID(uuid: string) {
     return this.accountRepository.findOne({
       where: { uuid },

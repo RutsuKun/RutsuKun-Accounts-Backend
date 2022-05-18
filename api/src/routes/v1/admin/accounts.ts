@@ -7,12 +7,14 @@ import { AccessTokenMiddleware } from "@middlewares/security";
 import { ScopeMiddleware } from "@middlewares/scope.middleware";
 import { HTTP, HTTPCodes } from "@utils";
 import { LoggerService } from "@services/LoggerService";
+import { GroupService } from "@services/GroupService";
 
 @Controller("/admin/accounts")
 export class AdminAccountsRoute {
 
   constructor(
     private accountsService: AccountsService,
+    private groupsService: GroupService,
     private loggerservice: LoggerService
   ) { }
 
@@ -44,6 +46,23 @@ export class AdminAccountsRoute {
     }
     
   }
+
+  @Get("/:uuid/groups")
+  @UseBefore(AccessTokenMiddleware)
+  @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:accounts:manage"]))
+  public async getAccountGroupsByUuid(
+    @Req() request: Request,
+    @Res() response: Response,
+    @PathParams("uuid") uuid: string,
+    @Context("logger") logger: Logger
+  ) {
+    let { groups } = await this.accountsService.getAccountGroupsByUUID(uuid);
+
+    if (!groups) return HTTP.ResourceNotFound(uuid, request, response, logger);
+
+    return response.status(200).json(groups);
+  }
+
 
   @Get("/:uuid/permissions")
   @UseBefore(AccessTokenMiddleware)

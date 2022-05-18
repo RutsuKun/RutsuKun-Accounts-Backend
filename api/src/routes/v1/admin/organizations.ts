@@ -25,4 +25,20 @@ export class AdminOrganizationsRoute {
     return res.status(200).json(orgs);
   }
 
+  @Get("/:uuid")
+  @UseBefore(AccessTokenMiddleware)
+  @UseBefore(
+    new ScopeMiddleware().use(["admin:organizations:read", "admin:organizations:manage", "admin:access"], {
+      checkAllScopes: false,
+    })
+  )
+  public async getOrganization(
+    @Req() request: Req,
+    @Res() response: Res,
+    @PathParams("uuid") uuid: string
+  ) {
+    let org = await this.organizationService.getOrganizationByUUID(uuid);
+    return response.status(200).json(org);
+  }
+
 }
