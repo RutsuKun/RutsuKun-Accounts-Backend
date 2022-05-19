@@ -5,6 +5,7 @@ import { GroupRepository } from "@repositories/GroupRepository";
 import { AccountGroup } from "@entities/AccountGroup";
 import { DeleteResult } from "typeorm";
 import { OrganizationRepository } from "@repositories/OrganizationRepository";
+import { Organization } from "@entities/Organization";
 
 @Injectable()
 export class OrganizationService {
@@ -20,6 +21,14 @@ export class OrganizationService {
 
   public getOrganizationByUUID(uuid: string) {
     return this.organizationRepository.findOne({ uuid });
+  }
+
+  public getOrganizationAppsByUUID(uuid: string) {
+    return this.organizationRepository.findOne({ uuid }, { relations: ["clients", "clients.account"] });
+  }
+
+  public getOrganizationMembersByUUID(uuid: string) {
+    return this.organizationRepository.findOne({ uuid }, { relations: ["members", "members.account"] });
   }
 
 }

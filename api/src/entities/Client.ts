@@ -83,7 +83,8 @@ export class ClientEntity {
   @OneToOne(() => OAuthClientACL, (acl) => acl.client, { cascade: true  })
   acl?: OAuthClientACL;
 
-  @OneToOne(() => Organization, (org) => org.client, { cascade: true  })
+  @ManyToOne(() => Organization, (organization) => organization.clients)
+  @JoinColumn({ name: "organization_id", referencedColumnName: "id" })
   organization?: Organization;
 
   @OneToMany(() => OAuthAuthorization, (authz) => authz.client, { cascade: true })

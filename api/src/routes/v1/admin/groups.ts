@@ -29,13 +29,6 @@ export class AdminGroupsRoute {
           name: group.name,
           display_name: group.display_name,
           enabled: group.enabled,
-          accounts: group.accounts.map((account) => {
-            return {
-              uuid: account.uuid,
-              username: account.username,
-              avatar: account.avatar,
-            };
-          }),
         };
       }),
     ]);

@@ -18,6 +18,7 @@ import { AccountAuthnMethod } from "./AccountAuthnMethod";
 import { AccountSession } from "./AccountSession";
 import { CrossAclAccountScopeEntity } from "./CrossAclAccountScope";
 import { OAuthAuthorization } from "./OAuthAuthorization";
+import { OrganizationMember } from "./OrganizationMembers";
 
 @Entity({
   name: "oauth_accounts",
@@ -106,6 +107,13 @@ export class AccountEntity {
 
   @OneToMany(() => OAuthAuthorization, (authz) => authz.account, { cascade: true })
   authorizations?: OAuthAuthorization[];
+
+  @OneToMany(() => OrganizationMember, (member) => member.account, {
+    cascade: true,
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
+  })
+  organizations?: OrganizationMember[];
 
   @VersionColumn()
   version?: number;

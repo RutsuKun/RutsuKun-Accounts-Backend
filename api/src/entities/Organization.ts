@@ -3,10 +3,13 @@ import {
   Entity,
   Generated,
   JoinColumn,
+  OneToMany,
   OneToOne,
   PrimaryColumn,
+  PrimaryGeneratedColumn,
 } from "typeorm";
 import { ClientEntity } from "./Client";
+import { OrganizationMember } from "./OrganizationMembers";
 
 @Entity({
   name: "organizations",
@@ -19,16 +22,15 @@ export class Organization {
     }
   }
 
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn()
+  id?: number;
+
+  @Column()
   @Generated("uuid")
   uuid?: string;
 
-  @OneToOne(() => ClientEntity, (client) => client.acl, { onUpdate: 'CASCADE', onDelete: 'CASCADE' })
-  @JoinColumn({
-    name: "client_id",
-    referencedColumnName: "client_id",
-  })
-  client?: ClientEntity;
+  @OneToMany(() => ClientEntity, (client) => client.organization, { cascade: true })
+  clients?: ClientEntity[];
 
   @Column({
     type: "varchar",
@@ -45,13 +47,20 @@ export class Organization {
 
   @Column({
     type: "varchar",
-    nullable: false
+    nullable: true
   })
   description: string;
 
   @Column({
     type: "varchar",
-    nullable: false
+    nullable: true
   })
   domain: string;
+
+  @OneToMany(() => OrganizationMember, (member) => member.organization, {
+    cascade: true,
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
+  })
+  members?: OrganizationMember[];
 }
