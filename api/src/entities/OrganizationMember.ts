@@ -4,12 +4,14 @@ import {
     Entity,
     Generated,
     JoinColumn,
+    JoinTable,
     ManyToMany,
     ManyToOne,
     OneToMany,
     PrimaryGeneratedColumn,
   } from "typeorm";
   import { AccountEntity } from "./Account";
+import { OAuthScope } from "./OAuthScope";
   
   @Entity({
     name: "organizations_members",
@@ -27,9 +29,6 @@ import {
     @Generated("uuid")
     uuid?: string;
   
-    @ManyToMany(() => AccountEntity, (account) => account.groups)
-    accounts?: AccountEntity[];
-
     @ManyToOne(() => Organization, (org) => org.members, { onDelete: "CASCADE" })
     @JoinColumn({ name: "organization_id", referencedColumnName: "id" })
     organization?: Organization;
@@ -37,6 +36,20 @@ import {
     @ManyToOne(() => AccountEntity, (account) => account.organizations, { onDelete: "CASCADE" })
     @JoinColumn({ name: "account_id", referencedColumnName: "id" })
     account?: AccountEntity;
+
+    @ManyToMany(() => OAuthScope, (scope) => scope.scopesOrganizationMembers)
+    @JoinTable({
+      name: "organizations_members_scopes",
+      joinColumn: {
+        name: "member_id",
+        referencedColumnName: "id",
+      },
+      inverseJoinColumn: {
+        name: "scope_id",
+        referencedColumnName: "id",
+      },
+    })
+    scopes?: OAuthScope[];
   
   }
   

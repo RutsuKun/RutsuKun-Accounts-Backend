@@ -41,6 +41,46 @@ export class AdminOrganizationsRoute {
     return response.status(200).json(org);
   }
 
+  @Get("/:uuid/details")
+  @UseBefore(AccessTokenMiddleware)
+  @UseBefore(
+    new ScopeMiddleware().use(["admin:organizations:read", "admin:organizations:manage", "admin:access"], {
+      checkAllScopes: false,
+    })
+  )
+  public async getOrganizationDetails(
+    @Req() request: Req,
+    @Res() response: Res,
+    @PathParams("uuid") uuid: string
+  ) {
+    let details = await this.organizationService.getOrganizationDetailsByUUID(uuid);
+    return response.status(200).json({
+      id: details.id,
+      uuid: details.uuid,
+      logo: details.logo,
+      name: details.name,
+      description: details.description,
+      domain: details.domain,
+      apps: details.clients.map((app) => ({ uuid: app.uuid, client_id: app.client_id, name: app.name })),
+      members: details.members.map((member) => ({
+        member_id: member.id,
+        member_uuid: member.uuid,
+        id: member.account.id,
+        uuid: member.account.uuid,
+        picture: member.account.avatar,
+        username: member.account.username,
+        permissions: member.scopes.map((scope) => scope.name)
+      })),
+      groups: details.groups.map((group) => ({
+        id: group.group.id,
+        uuid: group.group.uuid,
+        name: group.group.name,
+        display_name: group.group.display_name,
+        permissions: group.scopes.map((scope) => scope.name)
+      }))
+    });
+  }
+
   @Get("/:uuid/apps")
   @UseBefore(AccessTokenMiddleware)
   @UseBefore(
@@ -86,6 +126,29 @@ export class AdminOrganizationsRoute {
         uuid: member.account.uuid,
         picture: member.account.avatar,
         username: member.account.username
+      }
+    }));
+  }
+
+  @Get("/:uuid/groups")
+  @UseBefore(AccessTokenMiddleware)
+  @UseBefore(
+    new ScopeMiddleware().use(["admin:organizations:read", "admin:organizations:manage", "admin:access"], {
+      checkAllScopes: false,
+    })
+  )
+  public async getOrganizationGroups(
+    @Req() request: Req,
+    @Res() response: Res,
+    @PathParams("uuid") uuid: string
+  ) {
+    let { groups } = await this.organizationService.getOrganizationGroupsByUUID(uuid);
+    return response.status(200).json(groups.map((group) => {
+      return {
+        uuid: group.group.uuid,
+        name: group.group.name,
+        display_name: group.group.display_name,
+        enabled: group.group.enabled
       }
     }));
   }

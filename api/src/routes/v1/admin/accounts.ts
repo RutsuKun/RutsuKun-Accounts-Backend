@@ -8,14 +8,14 @@ import { ScopeMiddleware } from "@middlewares/scope.middleware";
 import { HTTP, HTTPCodes } from "@utils";
 import { LoggerService } from "@services/LoggerService";
 import { GroupService } from "@services/GroupService";
+import { OrganizationService } from "@services/OrganizationService";
 
 @Controller("/admin/accounts")
 export class AdminAccountsRoute {
 
   constructor(
     private accountsService: AccountsService,
-    private groupsService: GroupService,
-    private loggerservice: LoggerService
+    private organizationService: OrganizationService
   ) { }
 
   @Get("/")
@@ -73,11 +73,27 @@ export class AdminAccountsRoute {
     @PathParams("uuid") uuid: string,
     @Context("logger") logger: Logger
   ) {
-    let account = await this.accountsService.getAccountPermissionsByUUID(uuid);
 
-    if (!account) return HTTP.ResourceNotFound(uuid, request, response, logger);
+    let organizationPermissions = await this.organizationService.getOrganizationMemberScopesByUUID(uuid);
 
-    const permissions = account.accountScopes.map((accountScope) => {
+    let accountPermissions = await this.accountsService.getAccountPermissionsByUUID(uuid);
+
+    if (!accountPermissions && !organizationPermissions) return HTTP.ResourceNotFound(uuid, request, response, logger);
+
+    console.log('organizationPermissions ', organizationPermissions);
+    
+
+    organizationPermissions = organizationPermissions ? organizationPermissions.scopes.map((orgScope) => {
+      return {
+        uuid: orgScope.uuid,
+        default: orgScope.default,
+        system: orgScope.system,
+        name: orgScope.name,
+        org_uuid: organizationPermissions.organization.uuid
+      };
+    }) as any : [];
+
+    accountPermissions = accountPermissions.accountScopes.map((accountScope) => {
       return {
         uuid: accountScope.scope.uuid,
         default: accountScope.scope.default,
@@ -85,9 +101,12 @@ export class AdminAccountsRoute {
         name: accountScope.scope.name,
         acl_uuid: accountScope.acl.uuid
       };
-    });
+    }) as any;
 
-    return response.status(200).json(permissions);
+    return response.status(200).json({
+      accountPermissions,
+      organizationPermissions
+    });
   }
 
 

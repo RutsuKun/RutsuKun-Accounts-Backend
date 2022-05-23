@@ -9,7 +9,8 @@ import {
   PrimaryGeneratedColumn,
 } from "typeorm";
 import { ClientEntity } from "./Client";
-import { OrganizationMember } from "./OrganizationMembers";
+import { OrganizationGroup } from "./OrganizationGroup";
+import { OrganizationMember } from "./OrganizationMember";
 
 @Entity({
   name: "organizations",
@@ -63,4 +64,11 @@ export class Organization {
     onDelete: "CASCADE",
   })
   members?: OrganizationMember[];
+
+  @OneToMany(() => OrganizationGroup, (group) => group.organization, {
+    cascade: true,
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
+  })
+  groups?: OrganizationGroup[];
 }

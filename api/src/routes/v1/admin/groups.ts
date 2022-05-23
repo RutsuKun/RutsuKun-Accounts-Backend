@@ -115,11 +115,12 @@ export class AdminGroupsRoute {
   ) {
     let group = await this.groupService.getGroupPermissionsByUUID(uuid);
 
-
-
     if (!group) return HTTP.ResourceNotFound(uuid, request, response, logger);
 
+
+
     const permissions = group.groupScopes.map((groupScope) => {
+      if(!groupScope.scope) return;
       return {
         uuid: groupScope.scope.uuid,
         default: groupScope.scope.default,

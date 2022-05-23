@@ -18,7 +18,7 @@ import { AccountAuthnMethod } from "./AccountAuthnMethod";
 import { AccountSession } from "./AccountSession";
 import { CrossAclAccountScopeEntity } from "./CrossAclAccountScope";
 import { OAuthAuthorization } from "./OAuthAuthorization";
-import { OrganizationMember } from "./OrganizationMembers";
+import { OrganizationMember } from "./OrganizationMember";
 
 @Entity({
   name: "oauth_accounts",

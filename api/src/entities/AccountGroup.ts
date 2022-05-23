@@ -8,6 +8,7 @@ import {
 } from "typeorm";
 import { AccountEntity } from "./Account";
 import { CrossAclGroupScopeEntity } from "./CrossAclGroupScope";
+import { OrganizationGroup } from "./OrganizationGroup";
 
 @Entity({
   name: "oauth_groups",
@@ -42,4 +43,11 @@ export class AccountGroup {
     (groupScopes: CrossAclGroupScopeEntity) => groupScopes.group
   )
   groupScopes?: CrossAclGroupScopeEntity[];
+
+  @OneToMany(() => OrganizationGroup, (group) => group.group, {
+    cascade: true,
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
+  })
+  organizations?: OrganizationGroup[];
 }
