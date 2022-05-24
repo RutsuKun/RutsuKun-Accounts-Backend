@@ -19,6 +19,9 @@ import { AccountSession } from "./AccountSession";
 import { CrossAclAccountScopeEntity } from "./CrossAclAccountScope";
 import { OAuthAuthorization } from "./OAuthAuthorization";
 import { OrganizationMember } from "./OrganizationMember";
+import { CrossAclGroupScopeEntity } from "./CrossAclGroupScope";
+import { OAuthScope } from "./OAuthScope";
+import { OrganizationGroup } from "./OrganizationGroup";
 
 @Entity({
   name: "oauth_accounts",
@@ -96,7 +99,21 @@ export class AccountEntity {
   sessions?: AccountSession[];
 
   @OneToMany(() => CrossAclAccountScopeEntity, (scope) => scope.account)
-  accountScopes?: CrossAclAccountScopeEntity[];
+  accountAclScopes?: CrossAclAccountScopeEntity[];
+
+  @ManyToMany(() => OAuthScope, (scope) => scope.assignedAccounts, { cascade: true })
+  @JoinTable({
+    name: "oauth_accounts_permissions",
+    joinColumn: {
+      name: "account_id",
+      referencedColumnName: "id",
+    },
+    inverseJoinColumn: {
+      name: "scope_id",
+      referencedColumnName: "id",
+    },
+  })
+  assignedPermissions?: OAuthScope[];
 
   @OneToMany(() => AccountAuthnMethod, (authn) => authn.account, {
     cascade: true,

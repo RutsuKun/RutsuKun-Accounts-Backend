@@ -41,7 +41,7 @@ export class AdminOrganizationsRoute {
     return response.status(200).json(org);
   }
 
-  @Get("/:uuid/details")
+  @Get("/:uuid/debug")
   @UseBefore(AccessTokenMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:organizations:read", "admin:organizations:manage", "admin:access"], {
@@ -121,13 +121,11 @@ export class AdminOrganizationsRoute {
     @PathParams("uuid") uuid: string
   ) {
     let { members } = await this.organizationService.getOrganizationMembersByUUID(uuid);
-    return response.status(200).json(members.map((member) => {
-      return {
-        uuid: member.account.uuid,
-        picture: member.account.avatar,
-        username: member.account.username
-      }
-    }));
+
+    console.log('aaaaaaaa ', members);
+    
+
+    return response.status(200).json(members);
   }
 
   @Get("/:uuid/groups")

@@ -3,6 +3,7 @@ import {
   Entity,
   Generated,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
@@ -49,5 +50,5 @@ export class AccountGroup {
     onUpdate: "CASCADE",
     onDelete: "CASCADE",
   })
-  organizations?: OrganizationGroup[];
+  assignedOrganizatins?: OrganizationGroup[];
 }

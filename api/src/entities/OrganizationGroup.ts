@@ -13,6 +13,7 @@ import {
   import { AccountEntity } from "./Account";
 import { AccountGroup } from "./AccountGroup";
 import { OAuthScope } from "./OAuthScope";
+import { OrganizationMember } from "./OrganizationMember";
   
   @Entity({
     name: "organizations_groups",
@@ -34,7 +35,7 @@ import { OAuthScope } from "./OAuthScope";
     @JoinColumn({ name: "organization_id", referencedColumnName: "id" })
     organization?: Organization;
 
-    @ManyToOne(() => AccountGroup, (group) => group.organizations, { onDelete: "CASCADE" })
+    @ManyToOne(() => AccountGroup, (group) => group.assignedOrganizatins, { onDelete: "CASCADE" })
     @JoinColumn({ name: "group_id", referencedColumnName: "id" })
     group?: AccountGroup;
 

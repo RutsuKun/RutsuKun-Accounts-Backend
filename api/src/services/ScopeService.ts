@@ -29,7 +29,6 @@ export class ScopeService {
 
   async getScopesEntities(scopes: string[]) {
 
-
     const foundScopes = await this.oauthScopeRepository.find({ 
       where: scopes.map((scope) => ({ name: scope }) )
     });

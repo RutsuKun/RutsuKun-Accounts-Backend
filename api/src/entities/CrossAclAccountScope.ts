@@ -15,7 +15,7 @@ export class CrossAclAccountScopeEntity {
   @PrimaryGeneratedColumn()
   id?: number;
 
-  @ManyToOne(() => AccountEntity, (account: AccountEntity) => account.accountScopes, { nullable: false })
+  @ManyToOne(() => AccountEntity, (account: AccountEntity) => account.accountAclScopes, { nullable: false })
   account: AccountEntity;
 
   @ManyToOne(() => OAuthScope, (scope: OAuthScope) => scope.id, { cascade: true })

@@ -8,6 +8,7 @@ import {
     PrimaryColumn,
     PrimaryGeneratedColumn,
   } from "typeorm";
+import { AccountEntity } from "./Account";
 import { CrossAclAccountScopeEntity } from "./CrossAclAccountScope";
 import { CrossAclGroupScopeEntity } from "./CrossAclGroupScope";
 import { OAuthAuthorization } from "./OAuthAuthorization";
@@ -54,6 +55,9 @@ export class OAuthScope {
 
   @ManyToMany(() => OAuthAuthorization, (authz) => authz.scopes, { onUpdate: "CASCADE", onDelete: "CASCADE" })
   authorizations?: CrossAclAccountScopeEntity[];
+
+  @ManyToMany(() => AccountEntity, (account) => account.assignedPermissions)
+  assignedAccounts?: CrossAclAccountScopeEntity[];
 
   @ManyToMany(() => OrganizationMember, (member) => member.scopes, { onUpdate: "CASCADE", onDelete: "CASCADE" })
   organizationMembers?: OrganizationMember[];

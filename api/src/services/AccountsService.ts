@@ -15,6 +15,9 @@ import { AuthenticationMethods } from "common/interfaces/authentication.interfac
 import { AccountAuthnMethod } from "@entities/AccountAuthnMethod";
 import { AccountSessionRepository } from "@repositories/AccountSessionRepository";
 import { AccountSession } from "@entities/AccountSession";
+import { OrganizationService } from "./OrganizationService";
+import _ from "lodash";
+import { GroupService } from "./GroupService";
 
 @Injectable()
 export class AccountsService {
@@ -40,7 +43,9 @@ export class AccountsService {
 
   constructor(
     private logger: LoggerService,
-    private tokenService: TokenService
+    private tokenService: TokenService,
+    private organizationService: OrganizationService,
+    private groupService: GroupService,
   ) {
     this.logger = this.logger.child({
       label: { name: "AccountsService", type: "service" },
@@ -231,13 +236,13 @@ export class AccountsService {
         accounts.push({
           uuid: item.uuid,
           username: item.username,
-          avatar: item.avatar,
+          picture: item.avatar,
           role: item.role,
           state: item.state,
           banned: item.banned,
           clients: item.clients,
           providers: item.providers,
-          emails: item.emails,
+          email: item.getPrimaryEmail(),
           groups: item.groups
         });
       });
@@ -247,10 +252,11 @@ export class AccountsService {
   public async getAccountEndpoint(uuid: string): Promise<AccountEntity> {
     const foundAccount = await this.accountRepository.findOne(
       { uuid },
-      { relations: ["emails", "accountScopes", "accountScopes.scope"] }
+      { relations: ["emails", "accountAclScopes", "accountAclScopes.scope"] }
     );
 
     return {
+      id: foundAccount.id,
       uuid: foundAccount.uuid,
       username: foundAccount.username,
       avatar: foundAccount.avatar,
@@ -260,7 +266,7 @@ export class AccountsService {
       clients: foundAccount.clients,
       providers: foundAccount.providers,
       emails: foundAccount.emails,
-      accountScopes: foundAccount.accountScopes,
+      accountAclScopes: foundAccount.accountAclScopes,
     };
   }
   public deleteAccountEndpoint(accountId): Promise<any> {
@@ -322,10 +328,126 @@ export class AccountsService {
     });
   }
 
+  public async getAllPermissionsByUUID(uuid: string) {
+
+    let organizatonMember = await this.organizationService.getOrganizationsMemberWithPermissions(uuid);
+
+    let accountWithAclScopes = await this.getAccountAclPermissionsByUUID(uuid);
+
+
+
+    let accountPermissions = await this.getAccountPermissionsByUUID(uuid);
+
+    const organizatonMemberPermissions = organizatonMember.length ? organizatonMember.map((member) => member.scopes.map((scope) => (
+      {
+        name: scope.name,
+        source: {
+          type: "ORGANIZATION-MEMBER",
+          organization: {
+            id: member.organization.id,
+            uuid: member.organization.uuid,
+            name: member.organization.name
+          },
+          member: {
+            id: member.account.id,
+            uuid: member.account.uuid,
+            picture: member.account.avatar,
+            username: member.account.username 
+          }
+        },
+        sources: []
+      }
+    ))).reduce((prev, curr, index, array) => ([...prev, ...curr])) as any : []
+
+    const accountAclPermissions = accountWithAclScopes.accountAclScopes.map((scope) => (
+      {
+        name: scope.scope.name,
+        source: {
+          type: "ACL-ACCOUNT",
+          acl: {
+            uuid: scope.acl.uuid
+          },
+          account: {
+            id: accountWithAclScopes.id,
+            uuid: accountWithAclScopes.uuid,
+            picture: accountWithAclScopes.avatar,
+            username: accountWithAclScopes.username,
+          },
+        },
+        sources: []
+      }
+    )) as any
+
+    const groupsAclPermissions = accountWithAclScopes.groups.length ? 
+      accountWithAclScopes.groups.map(
+        (group) => group.groupScopes.length ? group.groupScopes.map(
+          (scope) => (
+            {
+              name: scope.scope.name,
+              source: {
+                type: "ACL-GROUP",
+                acl: {
+                  uuid: scope.acl.uuid
+                },
+                group: {
+                  id: group.id,
+                  uuid: group.uuid,
+                  name: group.name
+                },
+              },
+              sources: []
+            }
+    )) : []).reduce((prev, curr, index, array) => ([...prev, ...curr])) as any : []
+
+    function accumulator(result: any[], value, key) {
+      console.log('result ', result, 'value ', value);
+      
+      const findIndex = result.findIndex((o) => o.name === value.name);
+      console.log('findIndex ', findIndex);
+      console.log('found ', result[findIndex]);
+      
+      
+      if(findIndex > -1) {
+        if(result[findIndex].sources) result[findIndex].sources.push(value.source)
+      } else {
+        const newValue = {
+          ...value,
+          sources: [value.source]
+        };
+        delete newValue.source;
+        result.push(newValue);
+      }
+    }
+
+    const permissions = _.transform(
+      [
+        ...organizatonMemberPermissions,
+        ...accountAclPermissions,
+        ...groupsAclPermissions
+      ], accumulator);
+
+    return permissions;
+  }
+
+  public getAccountAclPermissionsByUUID(uuid: string) {
+    return this.accountRepository.findOne({
+      where: { uuid },
+      relations: [
+        "accountAclScopes",
+        "accountAclScopes.scope",
+        "accountAclScopes.acl",
+        "groups",
+        "groups.groupScopes", 
+        "groups.groupScopes.scope",
+        "groups.groupScopes.acl"
+      ],
+    });
+  }
+
   public getAccountPermissionsByUUID(uuid: string) {
     return this.accountRepository.findOne({
       where: { uuid },
-      relations: ["accountScopes", "accountScopes.scope", "accountScopes.acl"],
+      relations: ["assignedPermissions"],
     });
   }
 

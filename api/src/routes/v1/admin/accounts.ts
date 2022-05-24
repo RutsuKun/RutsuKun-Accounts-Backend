@@ -10,6 +10,8 @@ import { LoggerService } from "@services/LoggerService";
 import { GroupService } from "@services/GroupService";
 import { OrganizationService } from "@services/OrganizationService";
 
+import _ from "lodash";
+
 @Controller("/admin/accounts")
 export class AdminAccountsRoute {
 
@@ -74,39 +76,11 @@ export class AdminAccountsRoute {
     @Context("logger") logger: Logger
   ) {
 
-    let organizationPermissions = await this.organizationService.getOrganizationMemberScopesByUUID(uuid);
+    let allPermissions = await this.accountsService.getAllPermissionsByUUID(uuid);
 
-    let accountPermissions = await this.accountsService.getAccountPermissionsByUUID(uuid);
-
-    if (!accountPermissions && !organizationPermissions) return HTTP.ResourceNotFound(uuid, request, response, logger);
-
-    console.log('organizationPermissions ', organizationPermissions);
+    if (!allPermissions) return HTTP.ResourceNotFound(uuid, request, response, logger);
     
-
-    organizationPermissions = organizationPermissions ? organizationPermissions.scopes.map((orgScope) => {
-      return {
-        uuid: orgScope.uuid,
-        default: orgScope.default,
-        system: orgScope.system,
-        name: orgScope.name,
-        org_uuid: organizationPermissions.organization.uuid
-      };
-    }) as any : [];
-
-    accountPermissions = accountPermissions.accountScopes.map((accountScope) => {
-      return {
-        uuid: accountScope.scope.uuid,
-        default: accountScope.scope.default,
-        system: accountScope.scope.system,
-        name: accountScope.scope.name,
-        acl_uuid: accountScope.acl.uuid
-      };
-    }) as any;
-
-    return response.status(200).json({
-      accountPermissions,
-      organizationPermissions
-    });
+    return response.status(200).json(allPermissions);
   }
 
 
