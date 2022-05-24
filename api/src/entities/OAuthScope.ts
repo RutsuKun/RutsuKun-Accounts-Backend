@@ -13,6 +13,7 @@ import { CrossAclGroupScopeEntity } from "./CrossAclGroupScope";
 import { OAuthAuthorization } from "./OAuthAuthorization";
 import { OAuthClientACL } from "./OAuthClientACL";
 import { OrganizationMember } from "./OrganizationMember";
+import { ResourceServer } from "./ResourceServer";
 // import { ResourceServer } from "./ResourceServer";
   
 @Entity({
@@ -58,7 +59,7 @@ export class OAuthScope {
   @ManyToMany(() => OrganizationMember, (member) => member.scopes, { onUpdate: "CASCADE", onDelete: "CASCADE" })
   organizationMembers?: OrganizationMember[];
 
-  // @ManyToMany(() => ResourceServer, (rs) => rs.scopes, { onUpdate: "CASCADE", onDelete: "CASCADE" })
-  // resourceServer?: ResourceServer[];
+  @ManyToMany(() => ResourceServer, (rs) => rs.scopes, { onUpdate: "CASCADE", onDelete: "CASCADE" })
+  resourceServer?: ResourceServer[];
 }
   
