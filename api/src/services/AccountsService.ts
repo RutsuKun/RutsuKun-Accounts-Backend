@@ -361,7 +361,7 @@ export class AccountsService {
 
     const accountAclPermissions = accountWithAclScopes.accountAclScopes.map((scope) => (
       {
-        name: scope.scope.name,
+        name: scope.scope ? scope.scope.name : "All scopes",
         source: {
           type: "ACL-ACCOUNT",
           acl: {
@@ -383,7 +383,7 @@ export class AccountsService {
         (group) => group.groupScopes.length ? group.groupScopes.map(
           (scope) => (
             {
-              name: scope.scope.name,
+              name: scope.scope ? scope.scope.name : "All scopes",
               source: {
                 type: "ACL-GROUP",
                 acl: {

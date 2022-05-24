@@ -8,6 +8,7 @@ import { GroupService } from "@services/GroupService";
 import { AccountGroup } from "@entities/AccountGroup";
 import { HTTP, HTTPCodes, Validate } from "@utils";
 import { OrganizationService } from "@services/OrganizationService";
+import { Organization } from "@entities/Organization";
 
 @Controller("/admin/organizations")
 export class AdminOrganizationsRoute {
@@ -25,6 +26,18 @@ export class AdminOrganizationsRoute {
     return res.status(200).json(orgs);
   }
 
+  @Post()
+  @UseBefore(AccessTokenMiddleware)
+  @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:scopes:manage"]))
+  public async postAdminOrganization(
+    @Req() request: Req,
+    @Res() response: Res
+  ) {
+    const data: Organization = request.body;
+    const organization = await this.organizationService.createOrganization(data);
+    response.status(HTTPCodes.Created).json(organization);
+  }
+
   @Get("/:uuid")
   @UseBefore(AccessTokenMiddleware)
   @UseBefore(
@@ -39,6 +52,25 @@ export class AdminOrganizationsRoute {
   ) {
     let org = await this.organizationService.getOrganizationByUUID(uuid);
     return response.status(200).json(org);
+  }
+
+  @Delete("/:uuid")
+  @UseBefore(AccessTokenMiddleware)
+  @UseBefore(
+    new ScopeMiddleware().use(["admin:access", "admin:organizations:manage", "admin:organizations:delete"], {
+      checkAllScopes: false,
+    })
+  )
+  public async deleteAdminOrganization(
+    @PathParams("uuid") uuid: string,
+    @Res() response: Res
+  ) {
+    const deleted = await this.organizationService.deleteOrganization(uuid);
+    if (deleted.affected) {
+      response.status(HTTPCodes.OK).send();
+    } else {
+      response.status(HTTPCodes.NotFound).send();
+    }
   }
 
   @Get("/:uuid/debug")

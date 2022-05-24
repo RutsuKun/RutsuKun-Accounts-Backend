@@ -4,6 +4,8 @@ import { OrganizationRepository } from "@repositories/OrganizationRepository";
 import { OrganizationMemberRepository } from "@repositories/OrganizationMemberRepository";
 import _ from "lodash";
 import { OrganizationGroupRepository } from "@repositories/OrganizationGroupRepository";
+import { Organization } from "@entities/Organization";
+import { DeleteResult } from "typeorm";
 
 @Injectable()
 export class OrganizationService {
@@ -20,6 +22,14 @@ export class OrganizationService {
   private organizationGroupRepository: OrganizationGroupRepository;
 
   constructor() {}
+
+  public createOrganization(org: Organization): Promise<Organization> {
+    return this.organizationRepository.save(org);
+  }
+
+  public deleteOrganization(uuid: string): Promise<DeleteResult> {
+    return this.organizationRepository.delete({ uuid });
+  }
 
   public getOrganizations() {
     return this.organizationRepository.findAll();
@@ -90,7 +100,7 @@ export class OrganizationService {
       account_permissions: _.transform([
         ...member.account.accountAclScopes.map((scope) => (
           {
-            name: scope.scope.name,
+            name: scope.scope ? scope.scope.name : "All scopes",
             source: {
               type: "ACL-ACCOUNT",
               acl: {
@@ -108,7 +118,7 @@ export class OrganizationService {
         )),
         ...member.account.groups.length ? member.account.groups.map((group) => group.groupScopes.map((scope) => (
           {
-            name: scope.scope ? scope.scope.name : null,
+            name: scope.scope ? scope.scope.name : "All scopes",
             source: { 
               type: "ACL-GROUP",
               acl: {
