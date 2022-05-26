@@ -80,7 +80,7 @@ export class AdminOrganizationsRoute {
       checkAllScopes: false,
     })
   )
-  public async getOrganizationDetails(
+  public async getOrganizationDebug(
     @Req() request: Req,
     @Res() response: Res,
     @PathParams("uuid") uuid: string
@@ -104,10 +104,10 @@ export class AdminOrganizationsRoute {
         permissions: member.scopes.map((scope) => scope.name)
       })),
       groups: details.groups.map((group) => ({
-        id: group.group.id,
-        uuid: group.group.uuid,
-        name: group.group.name,
-        display_name: group.group.display_name,
+        id: group.assignedGroup.id,
+        uuid: group.assignedGroup.uuid,
+        name: group.assignedGroup.name,
+        display_name: group.assignedGroup.display_name,
         permissions: group.scopes.map((scope) => scope.name)
       }))
     });
@@ -153,10 +153,6 @@ export class AdminOrganizationsRoute {
     @PathParams("uuid") uuid: string
   ) {
     let { members } = await this.organizationService.getOrganizationMembersByUUID(uuid);
-
-    console.log('aaaaaaaa ', members);
-    
-
     return response.status(200).json(members);
   }
 
@@ -173,12 +169,13 @@ export class AdminOrganizationsRoute {
     @PathParams("uuid") uuid: string
   ) {
     let { groups } = await this.organizationService.getOrganizationGroupsByUUID(uuid);
+
     return response.status(200).json(groups.map((group) => {
       return {
-        uuid: group.group.uuid,
-        name: group.group.name,
-        display_name: group.group.display_name,
-        enabled: group.group.enabled
+        uuid: group.assignedGroup.uuid,
+        name: group.assignedGroup.name,
+        display_name: group.assignedGroup.display_name,
+        enabled: group.assignedGroup.enabled
       }
     }));
   }

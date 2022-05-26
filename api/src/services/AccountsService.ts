@@ -332,8 +332,9 @@ export class AccountsService {
 
     let organizatonMember = await this.organizationService.getOrganizationsMemberWithPermissions(uuid);
 
-    let accountWithAclScopes = await this.getAccountAclPermissionsByUUID(uuid);
+    // let organizationGroups = ;
 
+    let accountWithAclScopes = await this.getAccountAclPermissionsByUUID(uuid);
 
 
     let accountPermissions = await this.getAccountPermissionsByUUID(uuid);
@@ -358,6 +359,33 @@ export class AccountsService {
         sources: []
       }
     ))).reduce((prev, curr, index, array) => ([...prev, ...curr])) as any : []
+
+
+    const organizationMemberGroupsPermissions =  organizatonMember.length ?
+    organizatonMember.map( (member) => member.assignedGroups.length ?
+      member.assignedGroups.map( (group) => 
+        group.scopes ? group.scopes.map( (scope) => 
+        ({
+            name: scope.name,
+            source: { 
+              type: "ORGANIZATION-GROUP",
+              organization: {
+                id: member.organization.id,
+                uuid: member.organization.uuid,
+                name: member.organization.name
+              },
+              group: {
+                id: group.assignedGroup.id,
+                uuid: group.assignedGroup.uuid,
+                name: group.assignedGroup.name
+              },
+            },
+            sources: []
+          })
+        ) : []
+      ).reduce((prev, curr, index, array) => ([...prev, ...curr])) as any : []
+    ).reduce((prev, curr, index, array) => ([...prev, ...curr])) as any : [];
+
 
     const accountAclPermissions = accountWithAclScopes.accountAclScopes.map((scope) => (
       {
@@ -422,6 +450,7 @@ export class AccountsService {
     const permissions = _.transform(
       [
         ...organizatonMemberPermissions,
+        ...organizationMemberGroupsPermissions,
         ...accountAclPermissions,
         ...groupsAclPermissions
       ], accumulator);
@@ -450,6 +479,14 @@ export class AccountsService {
       relations: ["assignedPermissions"],
     });
   }
+
+  public getAccountOrganizationsGroupsPermissionsByUUID(uuid: string) {
+    return this.accountRepository.findOne({
+      where: { uuid },
+      relations: ["assignedOrganizationGroups", "assignedOrganizationGroups.scopes"],
+    });
+  }
+
 
   public getAccountByProvider(
     provider: string,
