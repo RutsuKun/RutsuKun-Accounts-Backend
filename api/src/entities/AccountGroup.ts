@@ -10,6 +10,7 @@ import {
 import { AccountEntity } from "./Account";
 import { CrossAclGroupScopeEntity } from "./CrossAclGroupScope";
 import { OrganizationGroup } from "./OrganizationGroup";
+import { OrganizationMember } from "./OrganizationMember";
 
 @Entity({
   name: "oauth_groups",
@@ -45,10 +46,10 @@ export class AccountGroup {
   )
   groupScopes?: CrossAclGroupScopeEntity[];
 
-  @OneToMany(() => OrganizationGroup, (group) => group.group, {
+  @OneToMany(() => OrganizationGroup, (group) => group.assignedGroup, {
     cascade: true,
     onUpdate: "CASCADE",
     onDelete: "CASCADE",
   })
-  assignedOrganizatins?: OrganizationGroup[];
+  assignedOrganizationGroups?: OrganizationGroup[];
 }

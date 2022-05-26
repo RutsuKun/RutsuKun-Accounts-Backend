@@ -11,7 +11,9 @@ import {
     PrimaryGeneratedColumn,
   } from "typeorm";
   import { AccountEntity } from "./Account";
+import { AccountGroup } from "./AccountGroup";
 import { OAuthScope } from "./OAuthScope";
+import { OrganizationGroup } from "./OrganizationGroup";
   
   @Entity({
     name: "organizations_members",
@@ -50,6 +52,20 @@ import { OAuthScope } from "./OAuthScope";
       },
     })
     scopes?: OAuthScope[];
+
+    @ManyToMany(() => OrganizationGroup, (group) => group.members)
+    @JoinTable({
+      name: "organizations_members_groups",
+      joinColumn: {
+        name: "member_id",
+        referencedColumnName: "id",
+      },
+      inverseJoinColumn: {
+        name: "group_id",
+        referencedColumnName: "id",
+      },
+    })
+    assignedGroups?: OrganizationGroup[];
   
   }
   

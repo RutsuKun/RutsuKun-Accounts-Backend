@@ -40,7 +40,7 @@ export class OrganizationService {
   }
 
   public getOrganizationDetailsByUUID(uuid: string) {
-    return this.organizationRepository.findOne({ uuid }, { relations: ["clients", "members", "members.account", "members.scopes", "groups", "groups.group", "groups.scopes"] });
+    return this.organizationRepository.findOne({ uuid }, { relations: ["clients", "members", "members.account", "members.scopes", "groups", "groups.assignedGroup", "groups.scopes"] });
   }
 
   public getOrganizationAppsByUUID(uuid: string) {
@@ -55,6 +55,9 @@ export class OrganizationService {
           "members", 
           "members.scopes", 
           "members.organization", 
+          "members.assignedGroups",
+          "members.assignedGroups.scopes",
+          "members.assignedGroups.assignedGroup",
           "members.account", 
           "members.account.emails", 
           "members.account.accountAclScopes", 
@@ -153,6 +156,31 @@ export class OrganizationService {
             sources: []
           }
         )),
+
+        ...member.assignedGroups.length ?
+        member.assignedGroups.map(
+          (group) => group.scopes.map(
+                (scope) => (
+                  {
+                    name: scope.name,
+                    source: { 
+                      type: "ORGANIZATION-GROUP",
+                      organization: {
+                        id: member.organization.id,
+                        uuid: member.organization.uuid,
+                        name: member.organization.name
+                      },
+                      group: {
+                        id: group.assignedGroup.id,
+                        uuid: group.assignedGroup.uuid,
+                        name: group.assignedGroup.name
+                      },
+                    },
+                    sources: []
+                  }
+                )
+              )
+            ).reduce((prev, curr, index, array) => ([...curr])) : []
       ], accumulator)
     }))
 
@@ -160,7 +188,7 @@ export class OrganizationService {
   }
 
   public getOrganizationGroupsByUUID(uuid: string) {
-    return this.organizationRepository.findOne({ uuid }, { relations: ["groups", "groups.group"] });
+    return this.organizationRepository.findOne({ uuid }, { relations: ["groups", "groups.assignedGroup"] });
   }
 
   public getOrganizationsMemberWithPermissions(accountUUID: string) {
@@ -170,7 +198,7 @@ export class OrganizationService {
           uuid: accountUUID
         },
       },
-      relations: ["account", "scopes", "organization"],
+      relations: ["account", "scopes", "organization", "assignedGroups", "assignedGroups.scopes", "assignedGroups.assignedGroup"],
     })
   }
 

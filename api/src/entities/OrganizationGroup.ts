@@ -31,13 +31,16 @@ import { OrganizationMember } from "./OrganizationMember";
     @Generated("uuid")
     uuid?: string;
   
-    @ManyToOne(() => Organization, (org) => org.groups, { onDelete: "CASCADE" })
+    @ManyToOne(() => Organization, (organization) => organization.groups, { onDelete: "CASCADE" })
     @JoinColumn({ name: "organization_id", referencedColumnName: "id" })
     organization?: Organization;
 
-    @ManyToOne(() => AccountGroup, (group) => group.assignedOrganizatins, { onDelete: "CASCADE" })
+    @ManyToMany(() => OrganizationMember, (member) => member.assignedGroups, { onDelete: "CASCADE" })
+    members?: OrganizationMember;
+
+    @ManyToOne(() => AccountGroup, (group) => group.assignedOrganizationGroups, { onDelete: "CASCADE" })
     @JoinColumn({ name: "group_id", referencedColumnName: "id" })
-    group?: AccountGroup;
+    assignedGroup?: AccountGroup;
 
     @ManyToMany(() => OAuthScope, (scope) => scope.scopesOrganizationMembers)
     @JoinTable({
