@@ -337,7 +337,7 @@ export class AccountsService {
     let accountWithAclScopes = await this.getAccountAclPermissionsByUUID(uuid);
 
 
-    let accountPermissions = await this.getAccountPermissionsByUUID(uuid);
+    let accountWithAssignedPermissions = await this.getAccountPermissionsByUUID(uuid);
 
     const organizatonMemberPermissions = organizatonMember.length ? organizatonMember.map((member) => member.scopes.map((scope) => (
       {
@@ -427,6 +427,22 @@ export class AccountsService {
             }
     )) : []).reduce((prev, curr, index, array) => ([...prev, ...curr])) as any : []
 
+    const accountDirectPermissions = accountWithAssignedPermissions.assignedPermissions.length ?  accountWithAssignedPermissions.assignedPermissions.map((scope) => (
+      {
+        name: scope.name,
+        source: {
+          type: "DIRECT-ACCOUNT",
+          account: {
+            id: accountWithAssignedPermissions.id,
+            uuid: accountWithAssignedPermissions.uuid,
+            picture: accountWithAssignedPermissions.avatar,
+            username: accountWithAssignedPermissions.username,
+          },
+        },
+        sources: []
+      }
+    )) as any : []
+
     function accumulator(result: any[], value, key) {
       console.log('result ', result, 'value ', value);
       
@@ -452,7 +468,8 @@ export class AccountsService {
         ...organizatonMemberPermissions,
         ...organizationMemberGroupsPermissions,
         ...accountAclPermissions,
-        ...groupsAclPermissions
+        ...groupsAclPermissions,
+        ...accountDirectPermissions
       ], accumulator);
 
     return permissions;
