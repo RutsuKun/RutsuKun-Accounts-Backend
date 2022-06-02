@@ -63,6 +63,7 @@ export class OrganizationService {
           "members.account.accountAclScopes", 
           "members.account.accountAclScopes.scope", 
           "members.account.accountAclScopes.acl", 
+          "members.account.assignedPermissions",
           "members.account.groups", 
           "members.account.groups.groupScopes", 
           "members.account.groups.groupScopes.scope",
@@ -135,7 +136,7 @@ export class OrganizationService {
             },
             sources: []
           }
-        ))).reduce((prev, curr, index, array) => ([...curr])) : [],
+        ))).reduce((prev, curr, index, array) => ([...prev, ...curr])) : [],
         ...member.scopes.map((scope) => (
           {
             name: scope.name,
@@ -180,7 +181,23 @@ export class OrganizationService {
                   }
                 )
               )
-            ).reduce((prev, curr, index, array) => ([...curr])) : []
+            ).reduce((prev, curr, index, array) => ([...curr])) : [],
+
+            ...member.account.assignedPermissions.length ? member.account.assignedPermissions.map((scope) => (
+              {
+                name: scope.name,
+                source: {
+                  type: "DIRECT-ACCOUNT",
+                  account: {
+                    id: member.account.id,
+                    uuid: member.account.uuid,
+                    picture: member.account.avatar,
+                    username: member.account.username 
+                  },
+                },
+                sources: []
+              }
+            )) : [],
       ], accumulator)
     }))
 

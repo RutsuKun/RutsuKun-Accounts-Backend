@@ -57,7 +57,7 @@ export class OAuthScope {
   authorizations?: CrossAclAccountScopeEntity[];
 
   @ManyToMany(() => AccountEntity, (account) => account.assignedPermissions)
-  assignedAccounts?: CrossAclAccountScopeEntity[];
+  assignedAccounts?: AccountEntity[];
 
   @ManyToMany(() => OrganizationMember, (member) => member.scopes, { onUpdate: "CASCADE", onDelete: "CASCADE" })
   organizationMembers?: OrganizationMember[];
