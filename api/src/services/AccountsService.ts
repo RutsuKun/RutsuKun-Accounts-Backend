@@ -249,7 +249,7 @@ export class AccountsService {
       resolve(accounts);
     });
   }
-  public async getAccountEndpoint(uuid: string): Promise<AccountEntity> {
+  public async getAccountEndpoint(uuid: string): Promise<Partial<AccountEntity>> {
     const foundAccount = await this.accountRepository.findOne(
       { uuid },
       { relations: ["emails", "accountAclScopes", "accountAclScopes.scope"] }
@@ -296,7 +296,7 @@ export class AccountsService {
       }
     });
   }
-  public getAccountByUUIDEndpoint(accountId: string): Promise<AccountEntity> {
+  public getAccountByUUIDEndpoint(accountId: string): Promise<Partial<AccountEntity>> {
     const ctx = this;
     return new Promise(async (resolve, reject) => {
       const account = await this.accountRepository.findByUUID(accountId);

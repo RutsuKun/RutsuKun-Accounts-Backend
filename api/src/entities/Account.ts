@@ -28,7 +28,7 @@ import { OrganizationGroup } from "./OrganizationGroup";
   engine: "InnoDB",
 })
 export class AccountEntity {
-  constructor(account: AccountEntity) {
+  constructor(account: Partial<AccountEntity>) {
     Object.assign(this, account);
   }
 
@@ -75,6 +75,16 @@ export class AccountEntity {
 
   @OneToMany(() => ClientEntity, (client) => client.account, { cascade: true })
   clients?: ClientEntity[];
+
+  get email () {
+    const found = this.emails.find((email) => email.primary);
+    return found ? found.email : null
+  }
+
+  get email_verified () {
+    const found = this.emails.find((email) => email.primary);
+    return found ? found.email_verified : null
+  }
 
   @OneToMany(() => Email, (email) => email.account, { cascade: true })
   emails?: Email[];
@@ -144,7 +154,8 @@ export class AccountEntity {
   }
 
   getPrimaryEmail?(): string {
-    return this.emails.find((email) => email.primary).email;
+    const found = this.emails.find((email) => email.primary);
+    return found ? found.email : null;
   }
 
   addClient?(client: ClientEntity) {

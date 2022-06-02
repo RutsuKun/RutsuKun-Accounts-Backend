@@ -35,4 +35,10 @@ export class ScopeService {
 
     return foundScopes;
   }
+
+  getBuildInScopes() {
+    return [
+      
+    ]
+  }
 }

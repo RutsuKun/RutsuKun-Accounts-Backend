@@ -267,17 +267,9 @@ export class OAuth2Route {
     @Res() response: Res,
     @Context('session') session: SessionService
   ) {
-    // const logger = Logger.child({
-    // 	label: {
-    // 		type: "oauth",
-    // 		name: "OAuth2 Server",
-    // 	},
-    // });
 
     const { ip, country, city, eu } = request.ipInfo;
     const { consentGiven } = request.body;
-
-
 
     if (!session.getCurrentSessionAccount.logged) {
       return response.status(200).json({
@@ -357,11 +349,12 @@ export class OAuth2Route {
 
   @Get("/userinfo")
   @UseBefore(AccessTokenMiddleware)
-  @UseBefore(new ScopeMiddleware().use(["account"]))
+  @UseBefore(new ScopeMiddleware().use(["openid"]))
   public async getUserInfo(@Req() request: Req, @Res() response: Res) {
     if (response.user.logged) {
-      const a = await this.accountService.getAccountInfo(response.user.sub);
-      response.status(200).json(a);
+      const account = await this.accountService.getByUUIDWithRelations(response.user.sub, ["emails"]);
+      const profile = await this.oauthService.getScopedProfile(account, response.user.scope);
+      response.status(200).json(profile);
     } else {
       response.status(200).json({
         error: "Account doesn't authenticated",
@@ -371,11 +364,12 @@ export class OAuth2Route {
 
   @Post("/userinfo")
   @UseBefore(AccessTokenMiddleware)
-  @UseBefore(new ScopeMiddleware().use(["account"]))
+  @UseBefore(new ScopeMiddleware().use(["openid"]))
   public async postUserInfo(@Req() request: Req, @Res() response: Res) {
     if (response.user.logged) {
-      const a = await this.accountService.getAccountInfo(response.user.sub);
-      response.status(200).json(a);
+      const account = await this.accountService.getByUUIDWithRelations(response.user.sub, ["emails"]);
+      const profile = await this.oauthService.getScopedProfile(account, response.user.scope);
+      response.status(200).json(profile);
     } else {
       response.status(200).json({
         error: "Account doesn't authenticated",

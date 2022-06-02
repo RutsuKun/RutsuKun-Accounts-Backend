@@ -33,12 +33,10 @@ import { ClientEntity } from "@entities/Client";
 import { OAuthScope } from "@entities/OAuthScope";
 import { ScopeService } from "./ScopeService";
 import { OAuthAuthorization } from "@entities/OAuthAuthorization";
+import { IOAuthProfile } from "common/interfaces/oauth.interface";
 
 @Injectable()
 export class OAuth2Service {
-  private name = "Authentication Server (OAuth2 + OpenID Connect)";
-  private running: boolean;
-  private logger: LoggerService;
 
   @Inject()
   @UseConnection("default")
@@ -60,15 +58,100 @@ export class OAuth2Service {
     private accountsService: AccountsService,
     private aclService: AclService,
     private scopeService: ScopeService
-  ) {
-    this.logger = this.loggerService.child({
-      label: {
-        type: "auth",
-        name: "Auth Manager",
-      },
+  ) {}
+
+  public mapOpenIDConnectClaims(account: AccountEntity) {
+    let mapping = {
+        uuid: 'sub',
+        email: 'email',
+        first_name: 'given_name',
+        last_name: 'family_name',
+        username: 'nickname',
+        full_name: 'name',
+        middle_name: 'middle_name',
+        preferred_username: 'preferred_username',
+        profile_page: 'profile',
+        avatar: 'picture',
+        website: 'website',
+        email_verified: 'email_verified',
+        gender: 'gender',
+        birthdate: 'birthdate',
+        timezone: 'zoneinfo',
+        locale: 'locale',
+        phone_number: 'phone_number',
+        phone_number_verified: 'phone_number_verified',
+        address: 'address',
+        updated_at: 'updated_at'
+    };
+
+    // for each attribute account[mapping.key], return a new object with key mapping.value
+    let mappedUser: IOAuthProfile = {
+      sub: null,
+      given_name: null,
+      family_name: null,
+      nickname: null,
+      name: null,
+      middle_name: null,
+      preferred_username: null,
+      profile: null,
+      picture: null,
+      website: null,
+      email: null,
+      email_verified: null,
+      gender: null,
+      birthdate: null,
+      zoneinfo: null,
+      locale: null,
+      phone_number: null,
+      phone_number_verified: null,
+      address: null,
+      updated_at: null,
+    };
+
+    Object.keys(mapping).forEach(key => {
+        if (account[key]) {
+            mappedUser[mapping[key]] = account[key];
+        }
     });
+    
+    return mappedUser;
   }
 
+  public getScopedProfile(account: AccountEntity, scope: string) {
+    const OPENID_PROFILE_CLAIMS = ['name', 'family_name', 'given_name', 'middle_name', 'nickname', 'preferred_username', 'profile', 'picture', 'website', 'gender', 'birthdate', 'zoneinfo', 'locale', 'updated_at'];
+    const OPENID_EMAIL_CLAIMS =   ['email', 'email_verified'];
+    const OPENID_ADDRESS_CLAIMS = ['address'];
+    const OPENID_PHONE_CLAIMS =   ['phone_number', 'phone_number_verified'];
+
+    let mappedUser = this.mapOpenIDConnectClaims(account);
+
+    let scopedUser = {
+        sub: mappedUser.sub
+    };
+
+    if (scope.indexOf('openid') === -1) {
+        return scopedUser;
+    }
+
+    if (scope.indexOf('profile') > -1) {
+        _.assign(scopedUser, _.pick(mappedUser, OPENID_PROFILE_CLAIMS));
+    }
+
+    if (scope.indexOf('email') > -1) {
+        _.assign(scopedUser, _.pick(mappedUser, OPENID_EMAIL_CLAIMS));
+    }
+
+    if (scope.indexOf('address') > -1) {
+        _.assign(scopedUser, _.pick(mappedUser, OPENID_ADDRESS_CLAIMS));
+    }
+
+    if (scope.indexOf('phone') > -1) {
+        _.assign(scopedUser, _.pick(mappedUser, OPENID_PHONE_CLAIMS));
+    }
+    
+    return scopedUser;
+  }
+  
   public async checkConsent(
     req: Request,
     res: Response,
@@ -119,9 +202,6 @@ export class OAuth2Service {
         const userId = session.getCurrentSessionAccount.uuid;
         const userUsername = session.getCurrentSessionAccount.username;
 
-        this.logger.info(
-          "Authorization in progress for " + userUsername + " (" + userId + ")"
-        );
 
         let scopeToAuthorize = session.getClientQuery.scope.split(" ");
 
@@ -157,14 +237,6 @@ export class OAuth2Service {
 
         switch (data.type) {
           case "response":
-            this.logger.success(
-              "Authorized  " + userUsername + " (" + userId + ")"
-            );
-            this.logger.info("Response Type: " + data.type);
-            this.logger.info("Response Mode: " + data.response.mode);
-            this.logger.info(
-              "Response Parameter URI: " + data.response.parameters.uri
-            );
             return data;
             break;
           case "error":
@@ -211,8 +283,6 @@ export class OAuth2Service {
 
         return resolve({ type: "authorized" });
       }
-
-      ctx.logger.info("SESSION STATE: " + session_state);
 
       if (consentGiven) {
         const account = await ctx.accountsService.getByUUIDWithRelations(
@@ -268,11 +338,6 @@ export class OAuth2Service {
         const response_types_check = response_type.split(" ");
         response_types_check.forEach((item, index) => {
           if (!client.response_types.includes(item)) {
-            ctx.logger.warn(
-              "CLIENT_RESPONSE_TYPE_INVALID: " + response_type,
-              null,
-              true
-            );
             return resolve({
               type: "error",
               error: "CLIENT_RESPONSE_TYPE_INVALID",
@@ -486,16 +551,8 @@ export class OAuth2Service {
     const ctx = this;
     return new Promise(async (resolve, reject) => {
       // const = data;
-      ctx.logger.info("Client: " + data.client.client_id, null, true);
       switch (data.grant_type) {
         case "authorization_code":
-          ctx.logger.info(
-            data.code_verifier
-              ? "Initialized Authorization Code flow with PKCE."
-              : "Initialized Authorization Code flow.",
-            null,
-            true
-          );
 
           if (
             !(await ctx.clientService.checkClientRedirectUri(
@@ -503,11 +560,6 @@ export class OAuth2Service {
               data.redirect_uri
             ))
           ) {
-            ctx.logger.error(
-              "Client invalid redirect_uri: " + data.redirect_uri,
-              null,
-              true
-            );
             return reject({
               error: "invalid_client",
               error_description: "Invalid redirect_uri",
@@ -535,54 +587,27 @@ export class OAuth2Service {
           }
 
           try {
-            ctx.logger.info(
-              "Authorization code validation in progress.",
-              null,
-              true
-            );
             const decoded: any = await ctx.tokenService.verifyCodeToken(
               data.code
             );
 
             if (!decoded) {
-              ctx.logger.error("Authorization code expired.", null, true);
               return reject({
                 error: "invalid_request",
                 error_description: "Invalid request",
               });
             }
 
-            ctx.logger.success("Authorization code is fine.", null, true);
+
             const account = await ctx.accountRepository.findByUUID(decoded.sub);
             const scopes = decoded.scopes;
             const state = decoded.state;
 
-            ctx.logger.info(
-              "Generates an Access Token for " +
-                account.username +
-                " (" +
-                account.uuid +
-                ")",
-              null,
-              true
-            );
             const access_token = await ctx.tokenService.createAccessToken({
               sub: account.uuid,
               client_id: data.client.client_id,
               scopes: scopes,
             });
-
-            ctx.logger.success("Access Token generated: " + access_token);
-
-            ctx.logger.info(
-              "Generates an ID Token for " +
-                account.username +
-                " (" +
-                account.uuid +
-                ")",
-              null,
-              true
-            );
 
             const at_hash = ctx.tokenService.createAtHash(
               access_token,
@@ -609,22 +634,17 @@ export class OAuth2Service {
               nonce: decoded.nonce,
             });
 
-            ctx.logger.success("ID Token generated: " + id_token);
-
             if (decoded.code_challenge) {
-              ctx.logger.info("Verify a code challenge in progress.");
               const verified = verifyChallenge(
                 data.code_verifier,
                 decoded.code_challenge
               );
               if (!verified) {
-                ctx.logger.error("Code challenge verify failed.", null, true);
                 return reject({
                   error: "invalid_client",
                   error_description: "Invalid client credentials",
                 });
               }
-              ctx.logger.success("Code challenge verified.", null, true);
             }
 
             return resolve({
@@ -635,7 +655,6 @@ export class OAuth2Service {
             });
           } catch (err) {
             console.log(err);
-            ctx.logger.error(err, null, true);
             return reject({
               error: "access_denied",
               error_descriptio: "Invalid request",
@@ -644,8 +663,6 @@ export class OAuth2Service {
 
           break;
         case "client_credentials":
-          ctx.logger.info("Initialized Client Credentials flow.", null, true);
-
           if (
             !(await ctx.clientService.checkClientSecret(
               data.client,
@@ -655,24 +672,11 @@ export class OAuth2Service {
             return reject("invalid_request");
           }
 
-          ctx.logger.info("Client Secret is fine");
-
-          ctx.logger.info(
-            "Generates an Access Token for " +
-              data.client.name +
-              " (" +
-              data.client.client_id +
-              ")",
-            null,
-            true
-          );
           const access_token = await ctx.tokenService.createAccessToken({
             sub: data.client.client_id,
             client_id: data.client.client_id,
             scopes: data.scope.split(" "),
           });
-
-          ctx.logger.success("Access Token generated: " + access_token);
 
           return resolve({
             access_token: access_token,
@@ -688,42 +692,18 @@ export class OAuth2Service {
             : [];
           const user_uuid = data.deviceCodeData.user_uuid;
 
-          ctx.logger.info("Initialized Device Code flow.", null, true);
-
           try {
-            ctx.logger.success("Authorization code is fine.", null, true);
             const account = await ctx.accountRepository.findByUUID(user_uuid);
 
-            ctx.logger.info(
-              "Generates an Access Token for " +
-                account.username +
-                " (" +
-                account.uuid +
-                ")",
-              null,
-              true
-            );
             const access_token = await ctx.tokenService.createAccessToken({
               sub: account.uuid,
               client_id: data.client.client_id,
               scopes: scopes,
             });
 
-            ctx.logger.success("Access Token generated: " + access_token);
-
             let id_token = null;
 
             if (scopes.includes("openid")) {
-              ctx.logger.info(
-                "Generates an ID Token for " +
-                  account.username +
-                  " (" +
-                  account.uuid +
-                  ")",
-                null,
-                true
-              );
-
               const at_hash = ctx.tokenService.createAtHash(
                 access_token,
                 "RS256"
@@ -752,7 +732,6 @@ export class OAuth2Service {
 
               id_token = await ctx.tokenService.createIDToken(IDTokenData);
 
-              ctx.logger.success("ID Token generated: " + id_token);
             }
 
             const response = {
@@ -766,7 +745,6 @@ export class OAuth2Service {
             return resolve(response);
           } catch (err) {
             console.log(err);
-            ctx.logger.error(err, null, true);
             return reject({
               error: "access_denied",
               error_descriptio: "Invalid request",
@@ -777,7 +755,6 @@ export class OAuth2Service {
 
           break;
         default:
-          ctx.logger.error("Invalid grant type", null, true);
           reject("unsupported_grant_type");
           break;
       }
