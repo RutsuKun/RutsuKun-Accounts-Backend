@@ -51,6 +51,7 @@ const processEnv = {
   DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
   DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
   DISCORD_CLIENT_REDIRECT_URI: process.env.DISCORD_CLIENT_REDIRECT_URI,
+  DISCORD_CLIENT_CONNECT_REDIRECT_URI: process.env.DISCORD_CLIENT_CONNECT_REDIRECT_URI,
 
   STEAM_REALM: process.env.STEAM_REALM,
   STEAM_API_KEY: process.env.STEAM_API_KEY,
@@ -59,10 +60,12 @@ const processEnv = {
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   GOOGLE_CLIENT_REDIRECT_URI: process.env.GOOGLE_CLIENT_REDIRECT_URI,
+  GOOGLE_CLIENT_CONNECT_REDIRECT_URI: process.env.GOOGLE_CLIENT_CONNECT_REDIRECT_URI,
 
   TWITTER_CLIENT_ID: process.env.TWITTER_CLIENT_ID,
   TWITTER_CLIENT_SECRET: process.env.TWITTER_CLIENT_SECRET,
   TWITTER_CLIENT_REDIRECT_URI: process.env.TWITTER_CLIENT_REDIRECT_URI,
+  TWITTER_CLIENT_CONNECT_REDIRECT_URI: process.env.TWITTER_CLIENT_CONNECT_REDIRECT_URI,
 
   AUTH0_DOMAIN: process.env.AUTH0_DOMAIN,
   AUTH0_CLIENT_ID: process.env.AUTH0_CLIENT_ID,
@@ -140,6 +143,7 @@ export class Config {
             clientId: processEnv.GOOGLE_CLIENT_ID,
             clientSecret: processEnv.GOOGLE_CLIENT_SECRET,
             clientRedirectUri: processEnv.GOOGLE_CLIENT_REDIRECT_URI,
+            clientConnectRedirectUri: processEnv.GOOGLE_CLIENT_CONNECT_REDIRECT_URI,
           },
         },
         {
@@ -150,6 +154,7 @@ export class Config {
             clientId: processEnv.DISCORD_CLIENT_ID,
             clientSecret: processEnv.DISCORD_CLIENT_SECRET,
             clientRedirectUri: processEnv.DISCORD_CLIENT_REDIRECT_URI,
+            clientConnectRedirectUri: processEnv.DISCORD_CLIENT_CONNECT_REDIRECT_URI,
           },
         },
         {
@@ -160,6 +165,7 @@ export class Config {
             clientId: processEnv.TWITTER_CLIENT_ID,
             clientSecret: processEnv.TWITTER_CLIENT_SECRET,
             clientRedirectUri: processEnv.TWITTER_CLIENT_REDIRECT_URI,
+            clientConnectRedirectUri: processEnv.TWITTER_CLIENT_CONNECT_REDIRECT_URI,
           },
         },
       ],

@@ -13,6 +13,7 @@ export class DiscordProvider implements IProvider {
   clientId: string = null;
   clientSecret: string = null;
   clientRedirectUri: string = null;
+  clientConnectRedirectUri: string = null;
 
   issuer = Config.API.url;
 
@@ -21,7 +22,8 @@ export class DiscordProvider implements IProvider {
     name: string,
     clientId: string,
     clientSecret: string,
-    clientRedirectUri: string
+    clientRedirectUri: string,
+    clientConnectRedirectUri: string
   ) {
     this.type = "twitter";
     this.id = id;
@@ -29,6 +31,7 @@ export class DiscordProvider implements IProvider {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.clientRedirectUri = clientRedirectUri;
+    this.clientConnectRedirectUri = clientConnectRedirectUri;
   }
 
   getCallbackUrl(authReqId, scopes) {
@@ -51,6 +54,26 @@ export class DiscordProvider implements IProvider {
     return twitterAuth.code.getUri();
   }
 
+  getConnectCallbackUrl(authReqId, scopes) {
+    const twitterAuth = new ClientOAuth2({
+      clientId: this.clientId,
+      clientSecret: this.clientSecret,
+      accessTokenUri: "https://api.twitter.com/oauth/token",
+      authorizationUri: "https://twitter.com/i/oauth2/authorize",
+      redirectUri: this.clientConnectRedirectUri
+        .replace(":issuer", this.issuer)
+        .replace(":providerId", this.id),
+      state: authReqId,
+      scopes: ['tweet.read', 'users.read'],
+      query: {
+        code_challenge: 'test',
+        code_challenge_method: 'plain'
+      }
+    });
+
+    return twitterAuth.code.getUri();
+  }
+
   async handleCallback(authReqId, scopes, originalUrl) {
     console.log('handleCallback', originalUrl);
     
@@ -60,6 +83,56 @@ export class DiscordProvider implements IProvider {
       accessTokenUri: "https://api.twitter.com/2/oauth2/token",
       authorizationUri: "https://twitter.com/i/oauth2/authorize",
       redirectUri: `${this.issuer}/v1/auth/providers/${this.id}/callback`,
+      state: authReqId,
+    });
+
+    
+    const token = await twitterAuth.code.getToken(originalUrl, {
+      body: {
+        code_verifier: 'test'
+      }
+    });
+
+
+    if (!token) {
+      ``;
+      return { error: "twitter: failed to get a token" };
+    }
+
+    const twitterUser = await this.getUser(token);
+
+    console.log('TwitterUser>>>>', twitterUser);
+
+
+    if (!twitterUser) {
+      return { error: "twitter: failed to get user" };
+    }
+
+    let identity: ProviderUser = {
+      ...twitterUser,
+    };
+
+    let identityData: ProviderIdentity = {
+      ...identity,
+      data: {
+        access_token: token.accessToken,
+      },
+    };
+
+    return identityData;
+  }
+
+  async handleConnectCallback(authReqId, scopes, originalUrl) {
+    console.log('handleCallback', originalUrl);
+    
+    const twitterAuth = new ClientOAuth2({
+      clientId: this.clientId,
+      clientSecret: this.clientSecret,
+      accessTokenUri: "https://api.twitter.com/2/oauth2/token",
+      authorizationUri: "https://twitter.com/i/oauth2/authorize",
+      redirectUri: this.clientConnectRedirectUri
+        .replace(":issuer", this.issuer)
+        .replace(":providerId", this.id),
       state: authReqId,
     });
 

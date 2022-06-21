@@ -13,6 +13,7 @@ export class DiscordProvider implements IProvider {
   clientId: string = null;
   clientSecret: string = null;
   clientRedirectUri: string = null;
+  clientConnectRedirectUri: string = null;
 
   issuer = Config.API.url;
 
@@ -21,7 +22,8 @@ export class DiscordProvider implements IProvider {
     name: string,
     clientId: string,
     clientSecret: string,
-    clientRedirectUri: string
+    clientRedirectUri: string,
+    clientConnectRedirectUri: string,
   ) {
     this.type = "discord";
     this.id = id;
@@ -29,6 +31,7 @@ export class DiscordProvider implements IProvider {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.clientRedirectUri = clientRedirectUri;
+    this.clientConnectRedirectUri = clientConnectRedirectUri;
   }
 
   getCallbackUrl(authReqId, scopes) {
@@ -50,6 +53,25 @@ export class DiscordProvider implements IProvider {
     return discordAuth.code.getUri();
   }
 
+  getConnectCallbackUrl(authReqId: string, scopes: string[]): string {
+    const discordAuth = new ClientOAuth2({
+      clientId: this.clientId,
+      clientSecret: this.clientSecret,
+      accessTokenUri: "https://discord.com/api/oauth2/token",
+      authorizationUri: "https://discord.com/api/oauth2/authorize",
+      redirectUri: this.clientConnectRedirectUri
+        .replace(":issuer", this.issuer)
+        .replace(":providerId", this.id),
+      state: authReqId,
+      scopes: ["email"],
+      query: {
+        prompt: "none",
+      },
+    });
+
+    return discordAuth.code.getUri();
+  }
+
   async handleCallback(authReqId, scopes, originalUrl) {
     const discordAuth = new ClientOAuth2({
       clientId: this.clientId,
@@ -57,6 +79,46 @@ export class DiscordProvider implements IProvider {
       accessTokenUri: "https://discord.com/api/oauth2/token",
       authorizationUri: "https://discord.com/api/oauth2/authorize",
       redirectUri: `${this.issuer}/v1/auth/providers/${this.id}/callback`,
+      state: authReqId,
+      scopes: ["email"],
+    });
+
+    const token = await discordAuth.code.getToken(originalUrl);
+
+    if (!token) {
+      ``;
+      return { error: "google: failed to get a token" };
+    }
+
+    const discordUser = await this.getUser(token);
+
+    if (!discordUser) {
+      return { error: "discord: failed to get user" };
+    }
+
+    let identity: ProviderUser = {
+      ...discordUser,
+    };
+
+    let identityData: ProviderIdentity = {
+      ...identity,
+      data: {
+        access_token: token.accessToken,
+      },
+    };
+
+    return identityData;
+  }
+
+  async handleConnectCallback(authReqId, scopes, originalUrl) {
+    const discordAuth = new ClientOAuth2({
+      clientId: this.clientId,
+      clientSecret: this.clientSecret,
+      accessTokenUri: "https://discord.com/api/oauth2/token",
+      authorizationUri: "https://discord.com/api/oauth2/authorize",
+      redirectUri: this.clientConnectRedirectUri
+        .replace(":issuer", this.issuer)
+        .replace(":providerId", this.id),
       state: authReqId,
       scopes: ["email"],
     });

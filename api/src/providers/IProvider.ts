@@ -7,8 +7,15 @@ export interface IProvider {
   issuer: string;
 
   getCallbackUrl(authReqId: string, scopes: string[]): string;
+  getConnectCallbackUrl(authReqId: string, scopes: string[]): string;
 
   handleCallback(
+    authReqId: string,
+    scopes: string[],
+    originalUrl: string
+  ): Promise<ProviderIdentity | { error: string }>;
+
+  handleConnectCallback(
     authReqId: string,
     scopes: string[],
     originalUrl: string

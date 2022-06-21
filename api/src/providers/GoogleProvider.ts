@@ -13,6 +13,7 @@ export class GoogleProvider implements IProvider {
   clientId: string = null;
   clientSecret: string = null;
   clientRedirectUri: string = null;
+  clientConnectRedirectUri: string = null;
 
   issuer = Config.API.url;
 
@@ -21,7 +22,8 @@ export class GoogleProvider implements IProvider {
     name: string,
     clientId: string,
     clientSecret: string,
-    clientRedirectUri: string
+    clientRedirectUri: string,
+    clientConnectRedirectUri: string
   ) {
     this.type = "github";
     this.id = id;
@@ -29,6 +31,7 @@ export class GoogleProvider implements IProvider {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.clientRedirectUri = clientRedirectUri;
+    this.clientConnectRedirectUri = clientConnectRedirectUri;
   }
 
   getCallbackUrl(authReqId, scopes) {
@@ -50,6 +53,25 @@ export class GoogleProvider implements IProvider {
     return githubAuth.code.getUri();
   }
 
+  getConnectCallbackUrl(authReqId, scopes) {
+    const githubAuth = new ClientOAuth2({
+      clientId: this.clientId,
+      clientSecret: this.clientSecret,
+      accessTokenUri: "https://oauth2.googleapis.com/token",
+      authorizationUri: "https://accounts.google.com/o/oauth2/v2/auth",
+      redirectUri: this.clientConnectRedirectUri
+        .replace(":issuer", this.issuer)
+        .replace(":providerId", this.id),
+      state: authReqId,
+      scopes: scopes,
+      query: {
+        prompt: "consent",
+      },
+    });
+
+    return githubAuth.code.getUri();
+  }
+
   async handleCallback(authReqId, scopes, originalUrl) {
     const googleAuth = new ClientOAuth2({
       clientId: this.clientId,
@@ -57,6 +79,45 @@ export class GoogleProvider implements IProvider {
       accessTokenUri: "https://oauth2.googleapis.com/token",
       authorizationUri: "https://accounts.google.com/o/oauth2/v2/auth",
       redirectUri: `${this.issuer}/v1/auth/providers/${this.id}/callback`,
+      state: authReqId,
+      scopes: scopes,
+    });
+
+    const token = await googleAuth.code.getToken(originalUrl);
+
+    if (!token) {
+      return { error: "google: failed to get a token" };
+    }
+
+    const googleUser = await this.getUser(token);
+
+    if (!googleUser) {
+      return { error: "google: failed to get user" };
+    }
+
+    let identity: ProviderUser = {
+      ...googleUser,
+    };
+
+    let identityData: ProviderIdentity = {
+      ...identity,
+      data: {
+        access_token: token.accessToken,
+      },
+    };
+
+    return identityData;
+  }
+
+  async handleConnectCallback(authReqId, scopes, originalUrl) {
+    const googleAuth = new ClientOAuth2({
+      clientId: this.clientId,
+      clientSecret: this.clientSecret,
+      accessTokenUri: "https://oauth2.googleapis.com/token",
+      authorizationUri: "https://accounts.google.com/o/oauth2/v2/auth",
+      redirectUri: this.clientConnectRedirectUri
+        .replace(":issuer", this.issuer)
+        .replace(":providerId", this.id),
       state: authReqId,
       scopes: scopes,
     });

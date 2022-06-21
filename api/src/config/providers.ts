@@ -23,7 +23,8 @@ export const initializeProviders = (): IProvider[] => {
             p.name,
             p.config.clientId,
             p.config.clientSecret,
-            p.config.clientRedirectUri
+            p.config.clientRedirectUri,
+            p.config.clientConnectRedirectUri
           );
         }
         break;
@@ -33,7 +34,8 @@ export const initializeProviders = (): IProvider[] => {
           p.name,
           p.config.clientId,
           p.config.clientSecret,
-          p.config.clientRedirectUri
+          p.config.clientRedirectUri,
+          p.config.clientConnectRedirectUri
         );
       }
       case "twitter": {
@@ -42,7 +44,8 @@ export const initializeProviders = (): IProvider[] => {
           p.name,
           p.config.clientId,
           p.config.clientSecret,
-          p.config.clientRedirectUri
+          p.config.clientRedirectUri,
+          p.config.clientConnectRedirectUri
         );
       }
       default:
