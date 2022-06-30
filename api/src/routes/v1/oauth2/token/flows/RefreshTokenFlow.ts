@@ -4,7 +4,7 @@ import { ClientService } from "@services/ClientService";
 import { LoggerService } from "@services/LoggerService";
 import { CreateRefreshTokenData, TokenService } from "@services/TokenService";
 
-import { HTTPCodes } from "@utils";
+import { HTTP, HTTPCodes } from "@utils";
 import { Config } from "@config";
 
 const oAuth2RefreshToken = (
@@ -48,6 +48,10 @@ const oAuth2RefreshToken = (
             error_description: "Refresh token invalid or expired.",
           });
     }
+
+    const isRevoked = await token.checkTokenIsRevoked(data.jti);
+
+    if(isRevoked) return HTTP.OAuth2InvalidRequest(request, response, 'Refresh Token is revoked');
 
     logger.info("Generates an Access Token for " + clientFromReq.name + " (" + clientFromReq.client_id + ")", null, true);
     const access_token = await token.createAccessToken({

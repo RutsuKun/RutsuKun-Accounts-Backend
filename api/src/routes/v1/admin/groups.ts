@@ -7,6 +7,7 @@ import { ScopeMiddleware } from "@middlewares/scope.middleware";
 import { GroupService } from "@services/GroupService";
 import { AccountGroup } from "@entities/AccountGroup";
 import { HTTP, HTTPCodes, Validate } from "@utils";
+import { CheckTokenRevokedMiddleware } from "@middlewares/token.middleware";
 
 @Controller("/admin/groups")
 export class AdminGroupsRoute {
@@ -14,6 +15,7 @@ export class AdminGroupsRoute {
 
   @Get()
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:groups:read", "admin:groups:manage", "admin:access"], {
       checkAllScopes: false,
@@ -36,6 +38,7 @@ export class AdminGroupsRoute {
 
   @Post("/")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:groups:manage"]))
   public async createGroup(
     @Req() request: Req,
@@ -82,6 +85,7 @@ export class AdminGroupsRoute {
 
   @Get("/:uuid")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:access", "admin:groups:manage", "admin:groups:read"], {
       checkAllScopes: false,
@@ -102,6 +106,7 @@ export class AdminGroupsRoute {
 
   @Get("/:uuid/permissions")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:access", "admin:groups:manage", "admin:groups:read"], {
       checkAllScopes: false,
@@ -134,6 +139,7 @@ export class AdminGroupsRoute {
 
   @Get("/:uuid/members")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:access", "admin:groups:manage", "admin:groups:read"], {
       checkAllScopes: false,
@@ -165,6 +171,7 @@ export class AdminGroupsRoute {
 
   @Delete("/:uuid")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:access", "admin:groups:manage", "admin:groups:delete"], {
       checkAllScopes: false,

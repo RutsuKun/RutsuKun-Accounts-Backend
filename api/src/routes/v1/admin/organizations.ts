@@ -9,6 +9,7 @@ import { AccountGroup } from "@entities/AccountGroup";
 import { HTTP, HTTPCodes, Validate } from "@utils";
 import { OrganizationService } from "@services/OrganizationService";
 import { Organization } from "@entities/Organization";
+import { CheckTokenRevokedMiddleware } from "@middlewares/token.middleware";
 
 @Controller("/admin/organizations")
 export class AdminOrganizationsRoute {
@@ -16,6 +17,7 @@ export class AdminOrganizationsRoute {
 
   @Get()
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:organizations:read", "admin:organizations:manage", "admin:access"], {
       checkAllScopes: false,
@@ -28,6 +30,7 @@ export class AdminOrganizationsRoute {
 
   @Post()
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:scopes:manage"]))
   public async postAdminOrganization(
     @Req() request: Req,
@@ -40,6 +43,7 @@ export class AdminOrganizationsRoute {
 
   @Get("/:uuid")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:organizations:read", "admin:organizations:manage", "admin:access"], {
       checkAllScopes: false,
@@ -56,6 +60,7 @@ export class AdminOrganizationsRoute {
 
   @Delete("/:uuid")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:access", "admin:organizations:manage", "admin:organizations:delete"], {
       checkAllScopes: false,
@@ -75,6 +80,7 @@ export class AdminOrganizationsRoute {
 
   @Get("/:uuid/debug")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:organizations:read", "admin:organizations:manage", "admin:access"], {
       checkAllScopes: false,
@@ -115,6 +121,7 @@ export class AdminOrganizationsRoute {
 
   @Get("/:uuid/apps")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:organizations:read", "admin:organizations:manage", "admin:access"], {
       checkAllScopes: false,
@@ -142,6 +149,7 @@ export class AdminOrganizationsRoute {
 
   @Get("/:uuid/members")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:organizations:read", "admin:organizations:manage", "admin:access"], {
       checkAllScopes: false,
@@ -158,6 +166,7 @@ export class AdminOrganizationsRoute {
 
   @Get("/:uuid/groups")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:organizations:read", "admin:organizations:manage", "admin:access"], {
       checkAllScopes: false,

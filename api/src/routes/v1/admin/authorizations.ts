@@ -6,6 +6,7 @@ import { AccessTokenMiddleware } from "@middlewares/security";
 import { ScopeMiddleware } from "@middlewares/scope.middleware";
 import { LoggerService } from "@services/LoggerService";
 import { OAuth2Service } from "@services/OAuth2Service";
+import { CheckTokenRevokedMiddleware } from "@middlewares/token.middleware";
 
 @Controller("/admin/authorizations")
 export class AdminAuthorizationsRoute {
@@ -16,6 +17,7 @@ export class AdminAuthorizationsRoute {
 
   @Get("/")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["admin:access"]))
   public async getAuthorizations(@Res() res: Response) {
     const authoriozations = await this.oauthService.getAuthorizations();

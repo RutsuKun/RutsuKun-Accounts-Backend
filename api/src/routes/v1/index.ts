@@ -3,7 +3,7 @@ import { Get } from "@tsed/schema";
 import { Config } from "@config";
 import { Req, Res, Session } from "@tsed/common";
 
-@Controller("/")
+@Controller("/v1")
 export class V1IndexRoute {
   constructor() {}
 

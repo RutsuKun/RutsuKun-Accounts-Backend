@@ -11,6 +11,7 @@ import { GroupService } from "@services/GroupService";
 import { OrganizationService } from "@services/OrganizationService";
 
 import _ from "lodash";
+import { CheckTokenRevokedMiddleware } from "@middlewares/token.middleware";
 
 @Controller("/admin/accounts")
 export class AdminAccountsRoute {
@@ -22,6 +23,7 @@ export class AdminAccountsRoute {
 
   @Get("/")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:accounts:manage"]))
   public async getAccounts(
     @Res() res: Response
@@ -33,6 +35,7 @@ export class AdminAccountsRoute {
 
   @Get("/:uuid")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:accounts:manage"]))
   public async getAccountByUuid(
     @Req() request: Request,
@@ -51,6 +54,7 @@ export class AdminAccountsRoute {
 
   @Get("/:uuid/groups")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:accounts:manage"]))
   public async getAccountGroupsByUuid(
     @Req() request: Request,
@@ -68,6 +72,7 @@ export class AdminAccountsRoute {
 
   @Get("/:uuid/permissions")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:accounts:manage"]))
   public async getAccountPermissionsByUuid(
     @Req() request: Request,

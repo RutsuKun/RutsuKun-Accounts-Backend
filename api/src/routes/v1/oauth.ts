@@ -5,6 +5,7 @@ import {Context, Controller, Get, Inject, Post, Req, Res, Use, UseBefore } from 
 import { CheckClientMiddleware } from "@middlewares/client.middleware";
 import { AccessTokenMiddleware } from "@middlewares/security";
 import { ScopeMiddleware } from "@middlewares/scope.middleware";
+import { CheckTokenRevokedMiddleware } from "@middlewares/token.middleware";
 
 // SERVICES
 
@@ -14,7 +15,7 @@ import { AccountsService } from "@services/AccountsService";
 import { OAuth2Service } from "@services/OAuth2Service";
 import { ClientService } from "@services/ClientService";
 
-import { HTTP, HTTPCodes } from "@utils";
+import { HTTPCodes } from "@utils";
 import { Config } from "@config";
 import { AclService } from "@services/AclService";
 import { SessionMiddleware } from "@middlewares/session.middleware";
@@ -23,6 +24,7 @@ import fs from 'fs';
 import path from "path";
 import { cwd } from "process";
 import { AuthService } from "@services/AuthService";
+
 
 @Controller("/oauth2")
 export class OAuth2Route {
@@ -349,6 +351,7 @@ export class OAuth2Route {
 
   @Get("/userinfo")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["openid"]))
   public async getUserInfo(@Req() request: Req, @Res() response: Res) {
     if (response.user.logged) {
@@ -364,6 +367,7 @@ export class OAuth2Route {
 
   @Post("/userinfo")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["openid"]))
   public async postUserInfo(@Req() request: Req, @Res() response: Res) {
     if (response.user.logged) {

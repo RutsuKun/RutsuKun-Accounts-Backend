@@ -4,6 +4,7 @@ import { Controller, Delete, Get, Inject, PathParams, Post, QueryParams, Req, Re
 
 import { SessionMiddleware } from "@middlewares/session.middleware";
 import { AccessTokenMiddleware } from "@middlewares/security";
+import { CheckTokenRevokedMiddleware } from "@middlewares/token.middleware";
 
 // SERVICES
 
@@ -17,31 +18,37 @@ import { ScopeMiddleware } from "@middlewares/scope.middleware";
 
 @Controller("/admin/clients")
 export class AdminClientsRoute {
-  public logger: LoggerService;
   constructor(
     @Inject() private sessionService: SessionService,
     @Inject() private clientService: ClientService,
     @Inject() private loggerService: LoggerService
-  ) {
-    this.logger = this.loggerService.child({
-      label: { name: "OAuth2", type: "oauth2" },
-    });
-  }
+  ) {}
 
   @Get("/")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:clients:manage"]))
-  public async getAdminClients(@Req() request: Req, @Res() response: Res) {
+  public async getAdminClients(
+    @Req() request: Req,
+    @Res() response: Res
+  ) {
     const clients = await this.clientService.getAdminClients(["account", "organization"]);
 
     const filtered = clients.map((client)=>{
         return {
             ...client,
-            account: {
+            account: client.account ? {
+                id: client.account.id,
                 uuid: client.account.uuid,
                 username: client.account.username,
                 avatar: client.account.avatar
-            }
+            } : null,
+            organization: client.organization ? {
+                id: client.organization.id,
+                uuid: client.organization.uuid,
+                name: client.organization.name,
+                logo: client.organization.logo
+            } : null
         }
     })
 
@@ -50,8 +57,12 @@ export class AdminClientsRoute {
 
   @Post("/")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:clients:manage"]))
-  public async postClients(@Req() request: Req, @Res() response: Res) {
+  public async postClients(
+    @Req() request: Req,
+    @Res() response: Res
+  ) {
     const data = request.body;
     try {
       const client = await this.clientService.addAdminClient(response.user.sub, data);
@@ -67,28 +78,40 @@ export class AdminClientsRoute {
 
   @Get("/:clientId")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:clients:manage"]))
   public async getAdminClient(
     @Req() request: Req,
     @Res() response: Res,
     @PathParams("clientId") client_id: string
   ) {
-    const client = await this.clientService.getAdminClient(client_id, ["account", "organization"]);
-    console.log('client ', client);
-    
 
-    response.status(HTTPCodes.OK).json({
-      ...client,
-      account: {
-          uuid: client.account.uuid,
-          username: client.account.username,
-          avatar: client.account.avatar
-      }
-    });
+    try {
+      const client = await this.clientService.getAdminClient(client_id, ["account", "organization"]);
+      response.status(HTTPCodes.OK).json({
+        ...client,
+        account: client.account ? {
+            id: client.account.id,
+            uuid: client.account.uuid,
+            username: client.account.username,
+            avatar: client.account.avatar
+        } : null,
+        organization: client.organization ? {
+            id: client.organization.id,
+            uuid: client.organization.uuid,
+            name: client.organization.name,
+            logo: client.organization.logo
+        } : null
+      });
+    } catch (error) {
+      response.status(HTTPCodes.BadRequest).json(error);
+    }
+
   }
 
   @Delete("/:clientId")
   @UseBefore(SessionMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:clients:manage", "admin:clients:delete"]))
   public deleteClients(@Req() request: Req, @Res() response: Res) {
     const currentAccount = this.sessionService.getCurrentSessionAccount;
@@ -123,8 +146,11 @@ export class AdminClientsRoute {
   }
 
   @Get("/:clientId/public")
-  public async getClientsPublic(@Req() request: Req, @Res() response: Res) {
-    const clientId = request.params.clientId;
+  public async getClientsPublic(
+    @Req() request: Req,
+    @Res() response: Res,
+    @PathParams("clientId") clientId: string
+  ) {
     try {
       const client = await this.clientService.getClientByClientId(clientId);
       response.status(HTTPCodes.OK).json({
@@ -141,9 +167,7 @@ export class AdminClientsRoute {
         },
       });
     } catch (error) {
-      response.status(HTTPCodes.BadRequest).json({
-        error: error,
-      });
+      response.status(HTTPCodes.BadRequest).json(error);
     }
   }
 }

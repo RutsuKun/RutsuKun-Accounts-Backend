@@ -4,6 +4,7 @@ import { Controller, Delete, Get, Inject, PathParams, Post, Put, Req, Res, UseBe
 
 import { ScopeMiddleware } from "@middlewares/scope.middleware";
 import { AccessTokenMiddleware } from "@middlewares/security";
+import { CheckTokenRevokedMiddleware } from "@middlewares/token.middleware";
 
 // SERVICES
 
@@ -20,6 +21,7 @@ export class AdminScopesRoute {
 
   @Get("/")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:scopes:manage"]))
   public async getAdminScopes(@Req() request: Req, @Res() response: Res) {
     const scopes = await this.scopeService.getScopes();
@@ -28,6 +30,7 @@ export class AdminScopesRoute {
 
   @Post("/")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(new ScopeMiddleware().use(["admin:access", "admin:scopes:manage"]))
   public async postAdminScopes(@Req() request: Req, @Res() response: Res) {
     const data: OAuthScope = request.body;
@@ -37,6 +40,7 @@ export class AdminScopesRoute {
 
   @Delete("/:scope")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:access", "admin:scopes:manage", "admin:scopes:delete"], {
       checkAllScopes: false,
@@ -56,6 +60,7 @@ export class AdminScopesRoute {
 
   @Put("/:scope")
   @UseBefore(AccessTokenMiddleware)
+  @UseBefore(CheckTokenRevokedMiddleware)
   @UseBefore(
     new ScopeMiddleware().use(["admin:access", "admin:scopes:manage", "admin:scopes:update"], {
       checkAllScopes: false,

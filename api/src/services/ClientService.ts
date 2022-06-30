@@ -64,11 +64,19 @@ export class ClientService {
     });
   }
 
-  getAdminClient(client_id: string, relations: string[]) {
-    return this.clientRepository.findOne({
+  async getAdminClient(client_id: string, relations: string[]) {
+    const found = await this.clientRepository.findOne({
       where: { client_id },
       relations: relations
     });
+    if(!found) {
+      throw {
+        error: "invalid_client",
+        error_description: "Provided client is invalid.",
+      };
+    }
+
+    return found;
   }
 
   public addClient(

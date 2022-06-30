@@ -74,8 +74,7 @@ export class TokenService {
         iss: Config.OAUTH2.issuer,
         sub: data.sub,
         scopes: data.scopes,
-        aud: Config.API.url,
-        cid: data.client_id,
+        aud: data.client_id,
         code_challenge: data.code_challenge,
         code_challenge_method: data.code_challenge_method,
         state: data.state,
@@ -180,12 +179,12 @@ export class TokenService {
     return verify;
   }
 
-  public async checkAccessTokenIsRevoked(jti: string) {
+  public async checkTokenIsRevoked(jti: string) {
     const check = await this.revokedTokenRepository.getOneByJTI(jti);
     return !!check;
   }
 
-  public revokeAccessToken(item: OAuthRevokedToken) {
+  public revokeToken(item: OAuthRevokedToken) {
     return this.revokedTokenRepository.saveRevokedToken(item);
   }
 
@@ -225,7 +224,7 @@ export class TokenService {
     }
 
 
-    return { valid: !!verify, data: verify };
+    return { valid: !!verify, data: verify as RefreshTokenData };
   }
 
   public generateEmailCode(accountId: string): Promise<string> {
@@ -347,6 +346,18 @@ export interface AccessTokenData {
   scopes: Array<string>;
   jti: string;
   timestamp: number;
+  iat: number;
+  exp: number;
+}
+
+export interface RefreshTokenData {
+  iss: string;
+  sub: string;
+  aud: string;
+  scopes: Array<string>;
+  jti: string;
+  timestamp: number;
+  typ: string;
   iat: number;
   exp: number;
 }

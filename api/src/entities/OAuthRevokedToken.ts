@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, Generated, JoinColumn, OneToOne, PrimaryColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Generated, JoinColumn, ManyToOne, OneToOne, PrimaryColumn } from "typeorm";
 import { AccountEntity } from "./Account";
 import { ClientEntity } from "./Client";
 
@@ -20,13 +20,13 @@ export class OAuthRevokedToken {
   @Column({ type: "numeric" })
   exp: number;
   
-  @OneToOne((type) => AccountEntity, (account) => account.id, { cascade: true })
-  @JoinColumn({ name: "sub", referencedColumnName: "id" })
-  sub: string;
+  @ManyToOne((type) => AccountEntity, (account) => account.id)
+  @JoinColumn({ name: "account_id", referencedColumnName: "id" })
+  account: AccountEntity;
   
-  @OneToOne((type) => ClientEntity, (client) => client.client_id, { cascade: true })
-  @JoinColumn({ name: "aud", referencedColumnName: "client_id" })
-  aud: string;
+  @ManyToOne((type) => ClientEntity, (client) => client.client_id, { cascade: true })
+  @JoinColumn({ name: "client_id", referencedColumnName: "client_id" })
+  client: ClientEntity;
   
   @CreateDateColumn({ name: "created_at" })
   created_at?: Date;
