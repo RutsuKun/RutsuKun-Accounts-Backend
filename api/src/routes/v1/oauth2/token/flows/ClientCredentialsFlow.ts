@@ -49,7 +49,7 @@ const oAuth2ClientCredentials = (
     res.status(HTTPCodes.OK).json({
       access_token: access_token,
       type: "Bearer",
-      expires_in: Config.Token.AccessTokenExp,
+      expires_in: Number(Config.Token.AccessTokenExp),
       scope: scope,
     });
   };

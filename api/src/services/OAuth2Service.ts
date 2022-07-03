@@ -650,7 +650,7 @@ export class OAuth2Service {
             return resolve({
               access_token: access_token,
               type: "Bearer",
-              expires_in: Config.Token.AccessTokenExp,
+              expires_in: Number(Config.Token.AccessTokenExp),
               id_token: id_token,
             });
           } catch (err) {
@@ -681,7 +681,7 @@ export class OAuth2Service {
           return resolve({
             access_token: access_token,
             type: "Bearer",
-            expires_in: Config.Token.AccessTokenExp,
+            expires_in: Number(Config.Token.AccessTokenExp),
             scope: data.scope,
           });
 
@@ -737,7 +737,7 @@ export class OAuth2Service {
             const response = {
               access_token: access_token,
               type: "Bearer",
-              expires_in: Config.Token.AccessTokenExp,
+              expires_in: Number(Config.Token.AccessTokenExp),
               scope: scopes.join(" "),
             };
 

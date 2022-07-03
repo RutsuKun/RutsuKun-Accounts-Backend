@@ -111,7 +111,7 @@ const oAuth2AuthorizationCodeFlow = (
       });
       res.access_token = access_token;
       res.token_type = "Bearer";
-      res.expires_in = Config.Token.AccessTokenExp,
+      res.expires_in = Number(Config.Token.AccessTokenExp),
       res.scope = scopes.join(" ");
 
       logger.success("Access Token generated: " + access_token);
