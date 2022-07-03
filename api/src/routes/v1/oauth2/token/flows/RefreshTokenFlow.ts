@@ -6,9 +6,11 @@ import { CreateRefreshTokenData, TokenService } from "@services/TokenService";
 
 import { HTTP, HTTPCodes } from "@utils";
 import { Config } from "@config";
+import { AccountsService } from "@services/AccountsService";
 
 const oAuth2RefreshToken = (
   logger: LoggerService,
+  account: AccountsService,
   client: ClientService,
   token: TokenService
 ) => {
@@ -18,6 +20,7 @@ const oAuth2RefreshToken = (
     let clientSecret = null;
 
     const { client_secret, refresh_token } = request.body;
+    
 
     const authHeader = request.headers.authorization;
     if (authHeader && authHeader.split(" ")[0] === "Basic") {
@@ -31,7 +34,7 @@ const oAuth2RefreshToken = (
 
     logger.info("Initialized Refresh Token flow.", null, true);
 
-    if (!(await client.checkClientSecret(clientFromReq, clientSecret))) {
+    if (clientSecret && !(await client.checkClientSecret(clientFromReq, clientSecret))) {
       response.status(HTTPCodes.BadRequest).json({
         error: "invalid_client",
         error_description: "Client secret invalid",
@@ -54,19 +57,46 @@ const oAuth2RefreshToken = (
     if(isRevoked) return HTTP.OAuth2InvalidRequest(request, response, 'Refresh Token is revoked');
 
     logger.info("Generates an Access Token for " + clientFromReq.name + " (" + clientFromReq.client_id + ")", null, true);
+    const findAccount = await account.getByUUIDWithRelations(data.sub, ["emails",]);
+
+
+    logger.info("Generates an Access Token for " + findAccount.username + " (" + findAccount.uuid + ")", null, true);
     const access_token = await token.createAccessToken({
-      sub: clientFromReq.client_id,
-      client_id: clientFromReq.client_id,
+      sub: findAccount.uuid,
+      client_id: data.aud,
       scopes: data.scopes
     });
 
     res.access_token = access_token;
     res.type = "Bearer";
-    res.expires_in = Config.Token.AccessTokenExp;
+    res.expires_in = Number(Config.Token.AccessTokenExp);
     res.scope = data.scopes.join(" ");
 
     logger.success("Access Token generated: " + access_token);
 
+    if(data.scopes.includes("openid")) {
+
+      const at_hash = token.createAtHash(access_token, "RS256");
+
+      const id_token = await token.createIDToken({
+        sub: findAccount.uuid,
+        username: findAccount.username,
+        picture: findAccount.avatar,
+        email: findAccount.getPrimaryEmail(),
+        role: findAccount.role,
+        banned: findAccount.banned,
+        client_id: clientFromReq.client_id,
+        scopes: data.scopes,
+        amr: ["pw"],
+        acr: "urn:raining:bronze",
+        azp: ["raining_auth"],
+        at_hash: at_hash,
+        nonce: data.nonce,
+      });
+      res.id_token = id_token;
+
+      logger.success("ID Token generated: " + id_token);
+    }
 
     if(data.scopes.includes("offline_access")) {
       const RefreshTokenData: CreateRefreshTokenData = {

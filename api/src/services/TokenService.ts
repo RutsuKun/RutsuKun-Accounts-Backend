@@ -358,6 +358,7 @@ export interface RefreshTokenData {
   jti: string;
   timestamp: number;
   typ: string;
+  nonce: string;
   iat: number;
   exp: number;
 }

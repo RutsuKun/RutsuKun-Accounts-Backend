@@ -55,6 +55,7 @@ export class OAuth2TokenRoute {
       case "refresh_token":
           return oAuth2RefreshToken(
             this.logger,
+            this.accountService,
             this.clientService,
             this.tokenService
           );
