@@ -22,13 +22,18 @@ export class MeRoute {
   ) {
     const currentAccount = await this.accountsService.getByUUIDWithRelations(
       session.getCurrentSessionAccount.uuid,
-      ["emails", "providers", "groups", "authn_methods"]
+      ["emails", "providers", "groups", "authn_methods", "organizations", "organizations.organization"]
     );
     delete currentAccount.password;
     delete currentAccount.verifyPassword;
 
     const res = {
       ...currentAccount,
+      organizations: currentAccount.organizations.map((org) => ({
+        id: org.organization.id,
+        uuid: org.organization.uuid,
+        name: org.organization.name
+      })),
       authn_methods: currentAccount.authn_methods.map((method) => {
         return {
           type: method.type,
